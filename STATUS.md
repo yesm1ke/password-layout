@@ -273,6 +273,10 @@ no input context at all).
 - A binary package that had slipped into the repository (downloaded into the
   checkout, then committed with everything else) was removed from every commit
   on `main`; built packages are now ignored anywhere in the tree.
+- Installed on the development machine from the release: `pacman -Q` shows
+  0.2.0-1, fcitx5 maps `/usr/lib/fcitx5/libpasswordlayout.so`, both services are
+  active, and a password field still switches the layout. The hand-made addon
+  description pointing at `build/` is gone.
 - Known problem, noted in the release: Qt applications that open with a password
   field already focused (KeePassXC, the polkit prompt) until Arch ships
   fcitx5-qt 5.1.16.
