@@ -190,6 +190,29 @@ knows about the focused field, with the password flag decoded. First finding
 before any clicking: Chromium runs without `--enable-wayland-ime`, so it does
 not talk to fcitx5 at all.
 
+#### Survey: Zen marks password fields
+
+`tools/fcitx-watch`, clicking through the test page
+`data:text/html,<input placeholder=text> <input type=password placeholder=password>`
+and https://github.com/login in Zen, without restarting the browser:
+
+| Field in Zen | What fcitx5 sees (`cap`) | Flags |
+|---|---|---|
+| ordinary text field | `72` | none |
+| password field | `100000007a` | **password** (bit 3), sensitive (bit 36) |
+| page area with no field | no focused input field | — |
+
+So Zen (Firefox-based, frontend `wayland_v2`, i.e. text-input on Wayland) does
+not switch the input method off in password fields, it marks them — the
+signal stage 3 needs. Stage 4 is not needed for Zen. The flag appears the
+moment the field gets focus and is gone when focus leaves it.
+
+A Chromium web-app window (`chrome-photos.google.com__-Default`) showed no
+focused input field at all, as expected without `--enable-wayland-ime`.
+
+Still to survey: Chromium with the input method enabled, Telegram (Qt), the
+polkit prompt.
+
 State at the end of the day: stage 1 is done, installed and running as
 `password-layout-tty.service`; 14 tests pass. Open: the check by typing, tmux,
 prompts with asterisks, and the backlog: the silent prompt, prompts under
