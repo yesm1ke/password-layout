@@ -395,6 +395,13 @@ has `Latin for tty (layout 0, was 1)` while it was typed and `layout 1
 restored (tty left)` after — the first check by typing, for `sudo` (by 0.4.0,
 which was still running). `ssh` has not been typed by hand yet.
 
+#### Hyprland + fcitx5, tested on Omarchy
+
+README, PLAN, the package description and the GitHub description say what the
+project needs and where it was tested: Hyprland for everything, fcitx5 for
+graphical applications, Omarchy as the one tested system. The terminal part
+needs only Hyprland and systemd.
+
 State at the end of the day: stage 1 is done, installed and running as
 `password-layout-tty.service`; 14 tests pass. Open: the check by typing, and the backlog: the silent prompt, prompts under
 `sudo`, the AUR, and a release procedure. The licence is MIT.

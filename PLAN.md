@@ -11,7 +11,9 @@ last used Latin layout is switched to, and the previous layout returns
 afterwards. "Latin" means a layout not in Omarchy's list of non-Latin ones.
 
 In scope: application windows in a Hyprland session — terminals (Ghostty, foot
-and the like) and the browser.
+and the like) and the browser, the latter through fcitx5. The reference system
+is Omarchy, which has both; other Hyprland setups should work with fcitx5
+installed.
 
 Out of scope: virtual consoles, the boot and disk-unlock screens, remote
 machines, other compositors.

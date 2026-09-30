@@ -3,7 +3,9 @@
 Makes typing a password painless when you write in more than one language:
 while you type a password the keyboard layout is Latin. If the current layout is
 not Latin, the one you used last is switched to, and your layout comes back when
-the password is done. For [Hyprland](https://hyprland.org/).
+the password is done. For [Hyprland](https://hyprland.org/) with fcitx5;
+developed and tested on [Omarchy](https://omarchy.org/), where both come out of
+the box.
 
 If you type in a non-Latin layout, you know the routine: `sudo` asks for a
 password, you type it blind, it is rejected, and only then do you notice the
@@ -54,6 +56,10 @@ other compositors are out of scope.
   method (Omarchy starts it by default), and its development files at build
   time. Without them only the terminal part is built.
 - systemd, for the user service.
+
+On Omarchy all of this is already in place. On another Hyprland setup the
+terminal part needs nothing more; for graphical applications fcitx5 has to be
+installed and running as the input method. Only Omarchy has been tested so far.
 
 ## Install
 

@@ -1,5 +1,5 @@
 pkgbase = password-layout
-	pkgdesc = Latin keyboard layout while you type a password: the last used Latin one, then yours back (Hyprland)
+	pkgdesc = Latin keyboard layout while you type a password: the last used Latin one, then yours back. For Hyprland with fcitx5, tested on Omarchy
 	pkgver = 0.5.0
 	pkgrel = 1
 	url = https://github.com/yesm1ke/password-layout
