@@ -349,6 +349,29 @@ at the moment of the upgrade, the addon loaded), with nothing done by hand. A
 simulated password field then logged `Latin for im (layout 0, was 1)` and
 `layout 1 restored (im left)` in fcitx5's journal.
 
+#### Which layout: the macOS rule
+
+The user asked for the macOS logic: in a secure field only ASCII-capable input
+sources are allowed; if the current one already is, nothing changes, otherwise
+the last used ASCII-capable one is chosen, and the previous source returns
+afterwards. Until now the first Latin layout was always chosen, which e.g. took
+a German user from `de` to `us`.
+
+- `State::enter`: no switch when the active layout is Latin; otherwise the last
+  Latin layout in use (`$XDG_RUNTIME_DIR/password-layout/last-latin`), falling
+  back to the first Latin one.
+- The terminal watcher follows layout switches through Hyprland's event socket
+  (`.socket2.sock`, `activelayout` events) and records the Latin ones; its idle
+  wait also wakes on that socket, which only happens when the layout changes.
+  The fcitx5 addon reads the same file, so it follows the rule too as long as
+  the watcher runs.
+- `password-layout status` shows the remembered layout.
+- Checked live with `kb_layout = us,de,ru` and the new build standing in for
+  the service: German active — no switch; German, then Russian — the password
+  gets German; US, then Russian — it gets US; Russian comes back each time.
+  Layouts restored to `us,ru` afterwards.
+- Tests: 24.
+
 State at the end of the day: stage 1 is done, installed and running as
 `password-layout-tty.service`; 14 tests pass. Open: the check by typing, and the backlog: the silent prompt, prompts under
 `sudo`, the AUR, and a release procedure. The licence is MIT.

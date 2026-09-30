@@ -46,11 +46,11 @@ void TtyActivity::watch(const char *name) {
     }
 }
 
-bool TtyActivity::wait(int timeoutMs) {
-    pollfd descriptor{fd_, POLLIN, 0};
-    // With no inotify the descriptor is negative, which poll() ignores: the
-    // call degrades to a plain sleep and the caller falls back to polling.
-    if (poll(&descriptor, 1, timeoutMs) <= 0) {
+bool TtyActivity::wait(int timeoutMs, int alsoFd) {
+    // A negative descriptor is ignored by poll(): with no inotify the call
+    // degrades to a plain sleep and the caller falls back to polling.
+    pollfd descriptors[2] = {{fd_, POLLIN, 0}, {alsoFd, POLLIN, 0}};
+    if (poll(descriptors, 2, timeoutMs) <= 0 || !(descriptors[0].revents & POLLIN)) {
         return false;
     }
     return drain();

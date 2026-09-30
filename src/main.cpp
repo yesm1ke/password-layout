@@ -107,6 +107,14 @@ int watchTty(Compositor &compositor, State &state) {
 
     TtyActivity activity;
     PromptWatcher watcher;
+    // Layout switches are followed as they happen, so that a password gets the
+    // Latin layout that was last in use - macOS does the same.
+    HyprlandEvents layoutEvents;
+    try {
+        state.noteLayout(compositor);
+    } catch (const std::exception &error) {
+        std::fprintf(stderr, "password-layout: %s\n", error.what());
+    }
     bool held = false;
     // Terminals printed recently, so keep looking at a steady pace instead of
     // waking for every write.
@@ -119,6 +127,13 @@ int watchTty(Compositor &compositor, State &state) {
     std::set<std::string> suspects = activity.takeActive();
     std::set<std::string> printedBefore;
     while (!stopRequested) {
+        if (layoutEvents.layoutChanged()) {
+            try {
+                state.noteLayout(compositor);
+            } catch (const std::exception &error) {
+                std::fprintf(stderr, "password-layout: %s\n", error.what());
+            }
+        }
         bool pending = true;
         std::set<std::string> atPrompt;
         try {
@@ -161,7 +176,7 @@ int watchTty(Compositor &compositor, State &state) {
         } else {
             // Nothing is asking for a password and the terminals are quiet:
             // sleep until one of them prints.
-            busy = activity.wait(-1);
+            busy = activity.wait(-1, layoutEvents.fd());
             secondLookOwed = busy;
         }
         // A terminal stays a suspect for one more look after it printed, in
@@ -192,6 +207,8 @@ int printStatus(Compositor &compositor, State &state) {
     }
 
     std::printf("layout index:        %d\n", compositor.layoutIndex());
+    auto last = state.lastLatin();
+    std::printf("last Latin layout:   %s\n", last ? std::to_string(*last).c_str() : "none seen");
     std::printf("holders:             %s\n", holders.empty() ? "none" : holders.c_str());
     std::printf("password prompts:    %s\n", prompts.empty() ? "none" : prompts.c_str());
     std::printf("focused window pid:  %d\n", focused);

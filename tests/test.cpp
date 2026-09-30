@@ -33,13 +33,14 @@ int failures = 0;
 
 struct FakeCompositor : Compositor {
     int index;
-    std::optional<int> latin;
+    std::vector<bool> latin;
     std::vector<int> switches;
 
-    explicit FakeCompositor(int start, std::optional<int> latinLayout = 0)
-        : index(start), latin(latinLayout) {}
+    // Two layouts by default, us,ru.
+    explicit FakeCompositor(int start, std::vector<bool> latinLayouts = {true, false})
+        : index(start), latin(std::move(latinLayouts)) {}
     int layoutIndex() override { return index; }
-    std::optional<int> latinIndex() override { return latin; }
+    std::vector<bool> latinLayouts() override { return latin; }
     void setLayout(int to) override {
         index = to;
         switches.push_back(to);
@@ -166,7 +167,7 @@ void stateRestoresOnlyAfterLastHolder() {
 void stateUsesTheLatinLayoutWhereverItIs() {
     // kb_layout = ru,us: Russian active, Latin is the second layout.
     State state(temporaryDirectory());
-    FakeCompositor compositor(0, 1);
+    FakeCompositor compositor(0, {false, true});
     state.enter("tty", compositor);
     CHECK(compositor.index == 1);
     state.leave("tty", compositor);
@@ -175,21 +176,54 @@ void stateUsesTheLatinLayoutWhereverItIs() {
 
 void stateDoesNothingWithoutALatinLayout() {
     State state(temporaryDirectory());
-    FakeCompositor compositor(0, std::nullopt);
+    FakeCompositor compositor(0, {false, false});
     state.enter("tty", compositor);
     state.leave("tty", compositor);
     CHECK(compositor.switches.empty());
     CHECK(state.holders().empty());
 }
 
-void latinLayoutIsFoundByName() {
-    CHECK(firstLatinLayout("us,ru", ",") == 0);
-    CHECK(firstLatinLayout("ru,us", ",") == 1);
-    CHECK(firstLatinLayout("ua,ru,de", ",,") == 2);
-    CHECK(firstLatinLayout("ru,ua", ",") == std::nullopt);
-    CHECK(firstLatinLayout("rs,rs", ",latin") == 1);
-    CHECK(firstLatinLayout("us", "") == 0);
-    CHECK(firstLatinLayout("", "") == std::nullopt);
+void stateKeepsALatinLayoutThatIsNotTheFirst() {
+    // us,de,ru with German active: already Latin, so nothing to do - as macOS.
+    State state(temporaryDirectory());
+    FakeCompositor compositor(1, {true, true, false});
+    state.enter("tty", compositor);
+    state.leave("tty", compositor);
+    CHECK(compositor.switches.empty());
+}
+
+void statePrefersTheLastLatinLayoutUsed() {
+    // us,de,ru: German was in use before switching to Russian.
+    State state(temporaryDirectory());
+    FakeCompositor compositor(1, {true, true, false});
+    state.noteLayout(compositor);
+    CHECK(state.lastLatin() == 1);
+    compositor.index = 2;
+    state.noteLayout(compositor); // Russian is not Latin, not remembered
+    CHECK(state.lastLatin() == 1);
+    state.enter("tty", compositor);
+    CHECK(compositor.index == 1);
+    state.leave("tty", compositor);
+    CHECK((compositor.switches == std::vector<int>{1, 2}));
+}
+
+void stateIgnoresARememberedLayoutThatIsGone() {
+    // The config changed since: layout 1 is now Russian.
+    State state(temporaryDirectory());
+    FakeCompositor compositor(1, {true, true});
+    state.noteLayout(compositor);
+    compositor.latin = {true, false};
+    state.enter("tty", compositor);
+    CHECK(compositor.index == 0);
+}
+
+void latinLayoutsAreFoundByName() {
+    CHECK((latinLayouts("us,ru", ",") == std::vector<bool>{true, false}));
+    CHECK((latinLayouts("ru,us", ",") == std::vector<bool>{false, true}));
+    CHECK((latinLayouts("ua,ru,de", ",,") == std::vector<bool>{false, false, true}));
+    CHECK((latinLayouts("rs,rs", ",latin") == std::vector<bool>{false, true}));
+    CHECK((latinLayouts("us", "") == std::vector<bool>{true}));
+    CHECK((latinLayouts("", "") == std::vector<bool>{false}));
 }
 
 void jsonStringsAreUnescaped() {
@@ -371,7 +405,10 @@ int main() {
         {"state ignores leave without enter", stateIgnoresLeaveWithoutEnter},
         {"state uses the Latin layout wherever it is", stateUsesTheLatinLayoutWhereverItIs},
         {"state does nothing without a Latin layout", stateDoesNothingWithoutALatinLayout},
-        {"Latin layout is found by name", latinLayoutIsFoundByName},
+        {"state keeps a Latin layout that is not the first", stateKeepsALatinLayoutThatIsNotTheFirst},
+        {"state prefers the last Latin layout used", statePrefersTheLastLatinLayoutUsed},
+        {"state ignores a remembered layout that is gone", stateIgnoresARememberedLayoutThatIsGone},
+        {"Latin layouts are found by name", latinLayoutsAreFoundByName},
         {"JSON strings are unescaped", jsonStringsAreUnescaped},
         {"silent read is a prompt owned by us", silentReadIsAPromptOwnedByUs},
         {"plain input is not a prompt", plainInputIsNotAPrompt},

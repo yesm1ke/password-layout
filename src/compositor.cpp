@@ -91,16 +91,15 @@ bool isNonLatin(const std::string &layout, const std::string &variant) {
 
 } // namespace
 
-std::optional<int> firstLatinLayout(std::string_view layouts, std::string_view variants) {
+std::vector<bool> latinLayouts(std::string_view layouts, std::string_view variants) {
     auto names = splitCommas(layouts);
     auto kinds = splitCommas(variants);
+    std::vector<bool> latin;
     for (size_t index = 0; index < names.size(); ++index) {
-        if (!names[index].empty() &&
-            !isNonLatin(names[index], index < kinds.size() ? kinds[index] : "")) {
-            return static_cast<int>(index);
-        }
+        latin.push_back(!names[index].empty() &&
+                        !isNonLatin(names[index], index < kinds.size() ? kinds[index] : ""));
     }
-    return std::nullopt;
+    return latin;
 }
 
 int mostCommon(const std::vector<long> &values, int fallback) {
@@ -165,15 +164,15 @@ int Hyprland::layoutIndex() {
     return mostCommon(jsonIntegers(request("j/devices"), "active_layout_index"), 0);
 }
 
-std::optional<int> Hyprland::latinIndex() {
+std::vector<bool> Hyprland::latinLayouts() {
     // Every keyboard gets the same kb_layout from the config; read the first.
     std::string devices = request("j/devices");
     auto layouts = jsonStrings(devices, "layout");
     auto variants = jsonStrings(devices, "variant");
     if (layouts.empty()) {
-        return std::nullopt;
+        return {};
     }
-    return firstLatinLayout(layouts.front(), variants.empty() ? "" : variants.front());
+    return ::latinLayouts(layouts.front(), variants.empty() ? "" : variants.front());
 }
 
 void Hyprland::setLayout(int index) {
@@ -185,4 +184,60 @@ void Hyprland::setLayout(int index) {
 pid_t Hyprland::focusedPid() {
     auto pids = jsonIntegers(request("j/activewindow"), "pid");
     return pids.empty() ? 0 : static_cast<pid_t>(pids.front());
+}
+
+HyprlandEvents::HyprlandEvents()
+    : socketPath_(requireEnv("XDG_RUNTIME_DIR") + "/hypr/" +
+                  requireEnv("HYPRLAND_INSTANCE_SIGNATURE") + "/.socket2.sock") {
+    connect();
+}
+
+HyprlandEvents::~HyprlandEvents() {
+    if (fd_ >= 0) {
+        close(fd_);
+    }
+}
+
+void HyprlandEvents::connect() {
+    sockaddr_un address{};
+    address.sun_family = AF_UNIX;
+    if (socketPath_.size() >= sizeof(address.sun_path)) {
+        return;
+    }
+    socketPath_.copy(address.sun_path, socketPath_.size());
+    fd_ = socket(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC | SOCK_NONBLOCK, 0);
+    if (fd_ >= 0 && ::connect(fd_, reinterpret_cast<sockaddr *>(&address), sizeof(address)) < 0) {
+        close(fd_);
+        fd_ = -1;
+    }
+    partial_.clear();
+}
+
+bool HyprlandEvents::layoutChanged() {
+    if (fd_ < 0) {
+        connect();
+        // Whatever happened while disconnected is unknown; assume a change.
+        return fd_ >= 0;
+    }
+    bool changed = false;
+    char buffer[4096];
+    for (;;) {
+        ssize_t count = read(fd_, buffer, sizeof(buffer));
+        if (count > 0) {
+            partial_.append(buffer, static_cast<size_t>(count));
+            continue;
+        }
+        if (count == 0 || (errno != EAGAIN && errno != EINTR)) {
+            // The compositor went away; try again next time.
+            close(fd_);
+            fd_ = -1;
+        }
+        break;
+    }
+    size_t end;
+    while ((end = partial_.find('\n')) != std::string::npos) {
+        changed = changed || partial_.starts_with("activelayout>>");
+        partial_.erase(0, end + 1);
+    }
+    return changed;
 }

@@ -47,6 +47,28 @@ State::State(std::string directory) : directory_(std::move(directory)) {
         directory_ = std::string(runtime) + "/password-layout";
     }
     path_ = directory_ + "/state";
+    lastLatinPath_ = directory_ + "/last-latin";
+}
+
+std::optional<int> State::lastLatin() const {
+    std::ifstream file(lastLatinPath_);
+    int index = -1;
+    if (file >> index && index >= 0) {
+        return index;
+    }
+    return std::nullopt;
+}
+
+void State::noteLayout(Compositor &compositor) {
+    int current = compositor.layoutIndex();
+    auto latin = compositor.latinLayouts();
+    if (current < 0 || current >= static_cast<int>(latin.size()) || !latin[current]) {
+        return;
+    }
+    Lock lock(directory_);
+    if (lastLatin() != current) {
+        std::ofstream(lastLatinPath_, std::ios::trunc) << current << '\n';
+    }
 }
 
 // First line is the layout to restore, every following line one holder.
@@ -80,12 +102,23 @@ void State::enter(const std::string &holder, Compositor &compositor) {
     if (contents.holders.empty()) {
         contents.previous = -1;
         int current = compositor.layoutIndex();
-        auto latin = compositor.latinIndex();
-        if (latin && current != *latin) {
-            compositor.setLayout(*latin);
-            contents.previous = current;
-            std::fprintf(stderr, "password-layout: Latin for %s (layout %d, was %d)\n",
-                         holder.c_str(), *latin, current);
+        auto latin = compositor.latinLayouts();
+        auto isLatin = [&](int index) {
+            return index >= 0 && index < static_cast<int>(latin.size()) && latin[index];
+        };
+        if (!latin.empty() && !isLatin(current)) {
+            int target = -1;
+            if (auto last = lastLatin(); last && isLatin(*last)) {
+                target = *last;
+            } else if (auto first = std::ranges::find(latin, true); first != latin.end()) {
+                target = static_cast<int>(first - latin.begin());
+            }
+            if (target >= 0) {
+                compositor.setLayout(target);
+                contents.previous = current;
+                std::fprintf(stderr, "password-layout: Latin for %s (layout %d, was %d)\n",
+                             holder.c_str(), target, current);
+            }
         }
     }
     if (std::ranges::find(contents.holders, holder) == contents.holders.end()) {

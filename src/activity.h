@@ -27,8 +27,9 @@ public:
     bool available() const { return fd_ >= 0; }
 
     // Waits up to `timeoutMs` (forever when negative) and returns whether any
-    // terminal produced output or appeared. Returns early on a signal.
-    bool wait(int timeoutMs);
+    // terminal produced output or appeared. Returns early on a signal, and
+    // when `alsoFd` becomes readable (the caller reads that one itself).
+    bool wait(int timeoutMs, int alsoFd = -1);
 
     // Same answer for whatever has happened since the last call, without waiting.
     bool drain();

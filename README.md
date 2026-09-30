@@ -37,9 +37,8 @@ other compositors are out of scope.
 
 ## Requirements
 
-- Hyprland, with a Latin layout somewhere in `kb_layout` (`us,ru` and `ru,us`
-  both work). The first layout that is not a known non-Latin one is used for
-  passwords; with no Latin layout at all nothing is switched.
+- Hyprland, with a Latin layout somewhere in `kb_layout` (`us,ru`, `ru,us` and
+  `us,de,ru` all work). With no Latin layout at all nothing is switched.
 - `g++` with C++20 support and `make`. There are no library dependencies.
 - For password fields in graphical applications: fcitx5 running as the input
   method (Omarchy starts it by default), and its development files at build
@@ -110,6 +109,20 @@ Other targets: `make test`, and `make bench` for the measurements in
   `busctl --user call org.fcitx.Fcitx5 /controller org.fcitx.Fcitx.Controller1 SetLogRule s passwordlayout=5`.
 
 ## How it works
+
+**Which layout, like macOS.** When a password field or prompt appears:
+
+- if the active layout is already Latin, nothing changes — German stays German;
+- otherwise the Latin layout that was last in use is switched to (the service
+  follows layout switches through Hyprland's event socket), or the first Latin
+  one if none has been used yet;
+- when the password is done, the layout that was active before comes back.
+
+A layout counts as Latin unless its code is in the list of non-Latin layouts
+Omarchy itself uses (`ru`, `ua`, `gr`, `il`, `ara`, …); a `latin` variant, as in
+`rs(latin)`, counts as Latin. This is the Linux counterpart of macOS's
+"ASCII-capable input source".
+
 
 A terminal does not tell anyone that it is showing a password prompt. What gives
 a prompt away is the mode of its pseudo-terminal: **echo is off while line input

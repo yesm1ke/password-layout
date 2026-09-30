@@ -2,6 +2,7 @@
 
 #include "compositor.h"
 
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -15,9 +16,18 @@ public:
     // Defaults to $XDG_RUNTIME_DIR/password-layout.
     explicit State(std::string directory = {});
 
+    // Like macOS with a secure field: nothing happens when the active layout is
+    // already Latin; otherwise the last Latin layout in use is chosen (the
+    // first Latin one when none has been seen), and the previous layout comes
+    // back after the last leave().
     void enter(const std::string &holder, Compositor &compositor);
     void leave(const std::string &holder, Compositor &compositor);
     std::vector<std::string> holders();
+
+    // Remembers the active layout if it is Latin, as the one to use for the
+    // next password. Called whenever the layout changes.
+    void noteLayout(Compositor &compositor);
+    std::optional<int> lastLatin() const;
 
 private:
     struct Contents {
@@ -30,4 +40,5 @@ private:
 
     std::string directory_;
     std::string path_;
+    std::string lastLatinPath_;
 };
