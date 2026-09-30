@@ -134,7 +134,11 @@ talks to Hyprland, `src/state.*` tracks who holds Latin and what to restore,
   at that point. The password prompt of `ssh` itself is recognised.
 - **Silent prompts**: echo turned off with no output at all around that moment.
   See [BACKLOG.md](BACKLOG.md).
-- **Terminals owned by root** (`sudo -i`) cannot be inspected.
+- **Prompts of programs run under `sudo`**: current `sudo` runs the command in
+  a pseudo-terminal of its own, owned by root, which an unprivileged service
+  cannot inspect. The password prompt of `sudo` itself is recognised; a prompt
+  shown by what it runs (`sudo ssh …`, a pacman hook that calls `ssh`, a root
+  shell from `sudo -i`) is not. See [BACKLOG.md](BACKLOG.md).
 - Programs that keep a terminal in "echo off, line input on" for their own
   reasons, such as an Emacs shell buffer, look like a prompt.
 

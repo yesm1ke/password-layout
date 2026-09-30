@@ -47,6 +47,46 @@ polling. The kernel sends no inotify event for `tcsetattr`; the master side of
 a pseudo-terminal is notified in packet mode (`TIOCPKT`), but it belongs to the
 terminal emulator, not to us.
 
+## Prompts of programs run under sudo are not recognised
+
+**What happens.** Since 1.9.14 `sudo` enables `use_pty` by default: the command
+runs in a new pseudo-terminal that `sudo` creates and relays to the user's
+terminal. That pseudo-terminal is owned by the target user — root, mode 620,
+group `tty` — so the service, running as the ordinary user, can neither open it
+to read its mode nor put an inotify watch on it. Meanwhile the user's own
+terminal sits in raw mode for the whole duration, which is not a prompt either.
+
+`sudo`'s own password prompt is unaffected: it is shown before that
+pseudo-terminal exists.
+
+**How it was found.** 2026-09-30: a pacman hook ran `git push`, `ssh` asked for
+a key passphrase, and the layout did not switch. `ls -l /dev/pts` showed the
+terminal of the running `sudo` owned by root. (That particular prompt was fixed
+at the source — the hook now reaches the ssh agent — but the class remains.)
+
+**Examples.** `sudo ssh host`, `sudo mysql -p`, `sudo cryptsetup open …`, any
+prompt inside `sudo -i` or `sudo -s`, anything a package hook asks.
+
+**What still works in our favour.** The process tree is readable, so the
+"belongs to the focused window" check already works for these terminals; and a
+prompt written through `/dev/tty` still produces an inotify event. Only reading
+the mode is blocked.
+
+**Options.**
+
+1. A small helper installed setgid `tty` — the same privilege `write(1)` has.
+   Group `tty` has write permission on every pseudo-terminal, which is enough
+   to open one and call `tcgetattr`. It would print the mode of the terminals
+   it is given and nothing else. Only possible for the packaged install, not
+   `make install-user`. The privilege is narrow but real: group `tty` can write
+   to anyone's terminal, so the helper must open without ever writing.
+2. A root system service answering "what is the mode of pts N" over a socket.
+   More moving parts and more privilege than option 1.
+3. Asking users to set `Defaults !use_pty` in sudoers. Works, but turns off a
+   sudo hardening feature; not something to recommend.
+
+Option 1 looks right. It needs a decision, since it ships a privileged binary.
+
 ## Publish the package to the AUR
 
 **Why it is not there.** An AUR account could not be created on 2026-09-30

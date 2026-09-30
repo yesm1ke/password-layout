@@ -166,7 +166,15 @@ tables, method and caveats are in [BENCHMARKS.md](BENCHMARKS.md).
   the service runs from `/usr/bin`, replacing the `make install-user` copy.
 - The AUR is pending an account; see [BACKLOG.md](BACKLOG.md).
 
+#### Found in use: prompts under sudo
+
+A pacman hook asked for an ssh key passphrase and the layout did not switch.
+Cause: `sudo` runs its command in a root-owned pseudo-terminal that the service
+cannot open. Recorded in [BACKLOG.md](BACKLOG.md) with the options; the README
+limitation was rewritten to say this plainly, as it covers far more than the
+`sudo -i` it used to mention.
+
 State at the end of the day: stage 1 is done, installed and running as
 `password-layout-tty.service`; 14 tests pass. Open: the check by typing, tmux,
-prompts with asterisks, and the backlog: the silent prompt, the AUR, and a
-release procedure. The licence is MIT.
+prompts with asterisks, and the backlog: the silent prompt, prompts under
+`sudo`, the AUR, and a release procedure. The licence is MIT.
