@@ -48,9 +48,13 @@ On Arch-based systems (Arch, Omarchy, …) install the package from the latest
 service for your user:
 
 ```
-sudo pacman -U https://github.com/yesm1ke/password-layout/releases/download/v0.1.0/password-layout-0.1.0-1-x86_64.pkg.tar.zst
+curl -LO https://github.com/yesm1ke/password-layout/releases/download/v0.1.0/password-layout-0.1.0-1-x86_64.pkg.tar.zst
+sudo pacman -U password-layout-0.1.0-1-x86_64.pkg.tar.zst
 systemctl --user enable --now password-layout-tty.service
 ```
+
+Download first: the package is not signed, and pacman insists on a signature
+when it is handed a URL, but not for a local file.
 
 The attached package is built for x86_64. To build it yourself, on any
 architecture, use the recipe in `packaging/arch`:

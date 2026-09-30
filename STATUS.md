@@ -157,9 +157,12 @@ tables, method and caveats are in [BENCHMARKS.md](BENCHMARKS.md).
 - Three tests that failed when another terminal on the machine printed at the
   wrong moment were fixed; the suite then passed 40 runs in a row.
 - Release v0.1.0 with a prebuilt Arch package, built from the release tag by the
-  recipe in `packaging/arch`. The package was built and its contents
-  inspected; it has not been installed with pacman on the development machine,
-  which still runs the `make install-user` copy.
+  recipe in `packaging/arch`. The package was built, its contents
+  inspected, and it installs into a scratch root.
+- The first install instruction was wrong: `pacman -U <url>` fails with a 404 on
+  the `.sig` file, because pacman requires a signature for a package given as a
+  URL and the release is unsigned. The instruction now downloads the file first.
+  A real install on the development machine is still to be confirmed.
 - The AUR is pending an account; see [BACKLOG.md](BACKLOG.md).
 
 State at the end of the day: stage 1 is done, installed and running as
