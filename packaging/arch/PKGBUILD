@@ -1,7 +1,7 @@
 # Maintainer: yesm1ke <yesm1ke@users.noreply.github.com>
 
 pkgname=password-layout
-pkgver=0.2.0
+pkgver=0.3.0
 pkgrel=1
 pkgdesc="Latin keyboard layout while typing a password in Hyprland terminals and browsers, then the previous one back"
 arch=('x86_64' 'aarch64')

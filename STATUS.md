@@ -302,7 +302,11 @@ Checked:
   window gives Russian; switching back gives Latin; closing tmux gives Russian.
 - Cost: see BENCHMARKS.md — no measurable difference while a prompt waits.
 
-Not yet: a check by hand, and a release (the installed 0.2.0 does not have it).
+Released in 0.3.0. Not yet: a check by hand.
+
+#### Release 0.3.0
+
+tmux support; nothing else changed. Built from the tag and published like 0.2.0.
 
 State at the end of the day: stage 1 is done, installed and running as
 `password-layout-tty.service`; 14 tests pass. Open: the check by typing,

@@ -52,8 +52,8 @@ On Arch-based systems (Arch, Omarchy, …) install the package from the latest
 service for your user:
 
 ```
-curl -LO https://github.com/yesm1ke/password-layout/releases/download/v0.2.0/password-layout-0.2.0-1-x86_64.pkg.tar.zst
-sudo pacman -U password-layout-0.2.0-1-x86_64.pkg.tar.zst
+curl -LO https://github.com/yesm1ke/password-layout/releases/download/v0.3.0/password-layout-0.3.0-1-x86_64.pkg.tar.zst
+sudo pacman -U password-layout-0.3.0-1-x86_64.pkg.tar.zst
 systemctl --user enable --now password-layout-tty.service
 systemctl --user restart omarchy-fcitx5.service    # on Omarchy; elsewhere: fcitx5 -rd
 ```
