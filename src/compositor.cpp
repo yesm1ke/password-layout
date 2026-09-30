@@ -43,6 +43,66 @@ std::vector<long> jsonIntegers(std::string_view json, std::string_view key) {
     return values;
 }
 
+std::vector<std::string> jsonStrings(std::string_view json, std::string_view key) {
+    std::string needle = "\"" + std::string(key) + "\":";
+    std::vector<std::string> values;
+    for (size_t at = json.find(needle); at != std::string_view::npos; at = json.find(needle, at)) {
+        at += needle.size();
+        while (at < json.size() && json[at] == ' ') {
+            ++at;
+        }
+        if (at >= json.size() || json[at] != '"') {
+            continue;
+        }
+        std::string value;
+        for (++at; at < json.size() && json[at] != '"'; ++at) {
+            if (json[at] == '\\' && at + 1 < json.size()) {
+                ++at;
+            }
+            value += json[at];
+        }
+        values.push_back(std::move(value));
+    }
+    return values;
+}
+
+namespace {
+
+std::vector<std::string> splitCommas(std::string_view text) {
+    std::vector<std::string> parts;
+    size_t start = 0;
+    for (;;) {
+        size_t comma = text.find(',', start);
+        parts.emplace_back(text.substr(start, comma - start));
+        if (comma == std::string_view::npos) {
+            return parts;
+        }
+        start = comma + 1;
+    }
+}
+
+bool isNonLatin(const std::string &layout, const std::string &variant) {
+    static const std::string nonLatin =
+        " af am ara bd bg by et ge gr il in iq ir kg kh kz la lk mk mm mn mv np rs ru sy th "
+        "tj ua ";
+    return nonLatin.find(" " + layout + " ") != std::string::npos &&
+           variant.find("latin") == std::string::npos;
+}
+
+} // namespace
+
+std::optional<int> firstLatinLayout(std::string_view layouts, std::string_view variants) {
+    auto names = splitCommas(layouts);
+    auto kinds = splitCommas(variants);
+    for (size_t index = 0; index < names.size(); ++index) {
+        if (!names[index].empty() &&
+            !isNonLatin(names[index], index < kinds.size() ? kinds[index] : "")) {
+            return static_cast<int>(index);
+        }
+    }
+    return std::nullopt;
+}
+
 int mostCommon(const std::vector<long> &values, int fallback) {
     std::map<long, int> counts;
     int best = fallback;
@@ -102,7 +162,18 @@ std::string Hyprland::request(std::string_view command) const {
 int Hyprland::layoutIndex() {
     // Keyboards are switched together, but a stray device can drift (an ACPI
     // button left on another layout), so go with what most of them agree on.
-    return mostCommon(jsonIntegers(request("j/devices"), "active_layout_index"), kLatinIndex);
+    return mostCommon(jsonIntegers(request("j/devices"), "active_layout_index"), 0);
+}
+
+std::optional<int> Hyprland::latinIndex() {
+    // Every keyboard gets the same kb_layout from the config; read the first.
+    std::string devices = request("j/devices");
+    auto layouts = jsonStrings(devices, "layout");
+    auto variants = jsonStrings(devices, "variant");
+    if (layouts.empty()) {
+        return std::nullopt;
+    }
+    return firstLatinLayout(layouts.front(), variants.empty() ? "" : variants.front());
 }
 
 void Hyprland::setLayout(int index) {

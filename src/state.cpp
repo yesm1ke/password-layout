@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <cerrno>
+#include <cstdio>
 #include <cstdlib>
 #include <fcntl.h>
 #include <fstream>
@@ -77,9 +78,14 @@ void State::enter(const std::string &holder, Compositor &compositor) {
     Lock lock(directory_);
     Contents contents = load();
     if (contents.holders.empty()) {
-        contents.previous = compositor.layoutIndex();
-        if (contents.previous != kLatinIndex) {
-            compositor.setLayout(kLatinIndex);
+        contents.previous = -1;
+        int current = compositor.layoutIndex();
+        auto latin = compositor.latinIndex();
+        if (latin && current != *latin) {
+            compositor.setLayout(*latin);
+            contents.previous = current;
+            std::fprintf(stderr, "password-layout: Latin for %s (layout %d, was %d)\n",
+                         holder.c_str(), *latin, current);
         }
     }
     if (std::ranges::find(contents.holders, holder) == contents.holders.end()) {
@@ -101,8 +107,10 @@ void State::leave(const std::string &holder, Compositor &compositor) {
         return;
     }
     unlink(path_.c_str());
-    if (contents.previous != kLatinIndex) {
+    if (contents.previous >= 0) {
         compositor.setLayout(contents.previous);
+        std::fprintf(stderr, "password-layout: layout %d restored (%s left)\n",
+                     contents.previous, holder.c_str());
     }
 }
 

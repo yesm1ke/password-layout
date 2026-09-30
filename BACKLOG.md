@@ -68,10 +68,59 @@ Upstream: reported as
 not, update should update ICData", merged 2026-09-12), released in fcitx5-qt
 5.1.16 (2026-09-24). Arch still ships 5.1.15-1 as of 2026-09-30.
 
+**Likely also affected: the Omarchy lock screen.** It is Qt (Quickshell) and
+calls `forceActiveFocus()` on its password field as it appears — the same
+situation. Not checked yet; if so, a non-Latin layout at lock time means typing
+the unlock password in it.
+
 **What to do.** Nothing in this project: once Arch updates `fcitx5-qt` to
-5.1.16, re-check KeePassXC and the polkit prompt, and close this entry. The
+5.1.16, re-check KeePassXC, the polkit prompt and the lock screen, and close
+this entry. The
 addon cannot work around it — fcitx5 is simply never told the field is a
 password field.
+
+## Electron password managers are not checked
+
+Bitwarden, 1Password and other Electron applications have not been surveyed.
+Electron is Chromium inside, and Chromium marks password fields, but Electron
+releases lag behind Chromium and under Wayland may not talk to the input method
+at all without extra flags (`--enable-wayland-ime`). Deferred on 2026-09-30.
+
+To check one: run `tools/fcitx-watch`, focus the application's password field,
+and see whether a focused field with the password flag appears.
+
+## Prompts that draw asterisks are not recognised
+
+**What happens.** The terminal watcher recognises a prompt by the terminal's
+mode: echo off, line input on. A program that shows an asterisk per typed
+character has to receive keys one by one, so it turns line input off as well —
+raw mode, which is also what bash waiting for a command, `less`, `vim` and any
+full-screen program use. By mode alone such a prompt is indistinguishable from
+them.
+
+| Program | Echo | Line input |
+|---|---|---|
+| `sudo`, `read -s`, Python `getpass` | off | on |
+| bash waiting for a command, `less` | off | off |
+| `systemd-ask-password` (draws asterisks) | off | off |
+
+**Where it shows up.** `sudo` with `Defaults pwfeedback` (not configured on the
+development machine); `systemd-ask-password` — disk passwords,
+`systemd-cryptenroll`, `homectl`; gpg's `pinentry-curses`/`pinentry-tty`
+(in a graphical session `/usr/bin/pinentry` picks the GTK one, which is a
+window, not a terminal); Node/Go CLIs with masked input such as `gh auth login`
+or `npm login`.
+
+**Option.** Recognise by the name of the terminal's foreground process instead
+of by mode: `systemd-ask-password`, `pinentry-curses` and `pinentry-tty` do
+nothing but ask for a password and exist only while asking. The foreground
+process group is in `/proc/<session leader>/stat` (`tpgid`), cheap to read once
+the session leader of each terminal is known. This cannot help with `gh`,
+`npm` or `sudo` with `pwfeedback`: the same process draws menus, runs commands
+and asks for the password. Roughly 100–150 lines.
+
+**Why deferred.** On the development machine only `systemd-ask-password` comes
+up, and rarely.
 
 ## Prompts of programs run under sudo are not recognised
 

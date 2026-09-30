@@ -33,10 +33,13 @@ int failures = 0;
 
 struct FakeCompositor : Compositor {
     int index;
+    std::optional<int> latin;
     std::vector<int> switches;
 
-    explicit FakeCompositor(int start) : index(start) {}
+    explicit FakeCompositor(int start, std::optional<int> latinLayout = 0)
+        : index(start), latin(latinLayout) {}
     int layoutIndex() override { return index; }
+    std::optional<int> latinIndex() override { return latin; }
     void setLayout(int to) override {
         index = to;
         switches.push_back(to);
@@ -158,6 +161,45 @@ void stateRestoresOnlyAfterLastHolder() {
     CHECK(compositor.index == 0);
     state.leave("im", compositor);
     CHECK((compositor.switches == std::vector<int>{0, 1}));
+}
+
+void stateUsesTheLatinLayoutWhereverItIs() {
+    // kb_layout = ru,us: Russian active, Latin is the second layout.
+    State state(temporaryDirectory());
+    FakeCompositor compositor(0, 1);
+    state.enter("tty", compositor);
+    CHECK(compositor.index == 1);
+    state.leave("tty", compositor);
+    CHECK((compositor.switches == std::vector<int>{1, 0}));
+}
+
+void stateDoesNothingWithoutALatinLayout() {
+    State state(temporaryDirectory());
+    FakeCompositor compositor(0, std::nullopt);
+    state.enter("tty", compositor);
+    state.leave("tty", compositor);
+    CHECK(compositor.switches.empty());
+    CHECK(state.holders().empty());
+}
+
+void latinLayoutIsFoundByName() {
+    CHECK(firstLatinLayout("us,ru", ",") == 0);
+    CHECK(firstLatinLayout("ru,us", ",") == 1);
+    CHECK(firstLatinLayout("ua,ru,de", ",,") == 2);
+    CHECK(firstLatinLayout("ru,ua", ",") == std::nullopt);
+    CHECK(firstLatinLayout("rs,rs", ",latin") == 1);
+    CHECK(firstLatinLayout("us", "") == 0);
+    CHECK(firstLatinLayout("", "") == std::nullopt);
+}
+
+void jsonStringsAreUnescaped() {
+    std::string devices = R"({"keyboards": [
+        {"name": "a \"layout\": no", "layout": "ru,us", "variant": ",", "active_layout_index": 0},
+        {"name": "b", "layout": "us", "variant": "", "active_layout_index": 0}]})";
+    CHECK((jsonStrings(devices, "layout") == std::vector<std::string>{"ru,us", "us"}));
+    CHECK((jsonStrings(devices, "variant") == std::vector<std::string>{",", ""}));
+    CHECK((jsonStrings(devices, "name") == std::vector<std::string>{"a \"layout\": no", "b"}));
+    CHECK(jsonStrings(devices, "active_layout_index").empty()); // not a string
 }
 
 void stateIgnoresLeaveWithoutEnter() {
@@ -327,6 +369,10 @@ int main() {
         {"state leaves Latin alone", stateLeavesLatinAlone},
         {"state restores only after the last holder", stateRestoresOnlyAfterLastHolder},
         {"state ignores leave without enter", stateIgnoresLeaveWithoutEnter},
+        {"state uses the Latin layout wherever it is", stateUsesTheLatinLayoutWhereverItIs},
+        {"state does nothing without a Latin layout", stateDoesNothingWithoutALatinLayout},
+        {"Latin layout is found by name", latinLayoutIsFoundByName},
+        {"JSON strings are unescaped", jsonStringsAreUnescaped},
         {"silent read is a prompt owned by us", silentReadIsAPromptOwnedByUs},
         {"plain input is not a prompt", plainInputIsNotAPrompt},
         {"terminal output names the terminal", terminalOutputNamesTheTerminal},

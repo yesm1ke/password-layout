@@ -21,7 +21,7 @@ public:
 
 private:
     struct Contents {
-        int previous = kLatinIndex;
+        int previous = -1; // the layout to give back; -1 when Latin was not switched to
         std::vector<std::string> holders;
     };
 

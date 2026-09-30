@@ -67,9 +67,7 @@ Left in this stage:
    one of a session that a client inside the focused window shows. tmux is asked
    again only when a client's terminal redraws, which is what switching panes or
    windows looks like from outside. zellij and screen are not handled.
-3. Decide about prompts that draw asterisks (`systemd-ask-password`, `sudo` with
-   `pwfeedback`): line input is off as well, which makes them indistinguishable
-   from an ordinary full-screen program.
+3. Prompts that draw asterisks — deferred, see BACKLOG.md.
 
 ## Stage 2. Survey of graphical applications
 
@@ -114,7 +112,12 @@ of the browser itself, or an extension that reports focus on
 
 ## Stage 5. Finishing
 
-- One-command setup on a new machine.
+- One-command setup on a new machine — done in 0.4.0: the package enables the
+  service for every user and its install script starts it and restarts fcitx5
+  in running sessions.
+- The Latin layout is found by name rather than assumed to be first — done in
+  0.4.0.
+- Every actual switch is logged — done in 0.4.0.
 - Rebuilding the addon after an fcitx5 update.
 - The lock screen and the polkit prompt are not application windows; low
   priority, and stage 3 probably covers them anyway.

@@ -37,8 +37,9 @@ other compositors are out of scope.
 
 ## Requirements
 
-- Hyprland, with the Latin layout **first** in `kb_layout` (for example
-  `us,ru`). Layout index 0 is what gets selected for passwords.
+- Hyprland, with a Latin layout somewhere in `kb_layout` (`us,ru` and `ru,us`
+  both work). The first layout that is not a known non-Latin one is used for
+  passwords; with no Latin layout at all nothing is switched.
 - `g++` with C++20 support and `make`. There are no library dependencies.
 - For password fields in graphical applications: fcitx5 running as the input
   method (Omarchy starts it by default), and its development files at build
@@ -48,18 +49,17 @@ other compositors are out of scope.
 ## Install
 
 On Arch-based systems (Arch, Omarchy, …) install the package from the latest
-[release](https://github.com/yesm1ke/password-layout/releases) and enable the
-service for your user:
+[release](https://github.com/yesm1ke/password-layout/releases):
 
 ```
-curl -LO https://github.com/yesm1ke/password-layout/releases/download/v0.3.0/password-layout-0.3.0-1-x86_64.pkg.tar.zst
-sudo pacman -U password-layout-0.3.0-1-x86_64.pkg.tar.zst
-systemctl --user enable --now password-layout-tty.service
-systemctl --user restart omarchy-fcitx5.service    # on Omarchy; elsewhere: fcitx5 -rd
+curl -LO https://github.com/yesm1ke/password-layout/releases/download/v0.4.0/password-layout-0.4.0-1-x86_64.pkg.tar.zst
+sudo pacman -U password-layout-0.4.0-1-x86_64.pkg.tar.zst
 ```
 
-The last line restarts fcitx5 so it loads the addon for password fields in
-graphical applications.
+That is all. The service is enabled for every user by the package, and the
+install script starts it and restarts fcitx5 (so it loads the addon) in the
+sessions of users who are logged in; others get both at their next login. Up
+to 0.3.0 these were manual steps.
 
 Download first: the package is not signed, and pacman insists on a signature
 when it is handed a URL, but not for a local file.
@@ -87,15 +87,27 @@ System-wide, which is what a package does:
 ```
 make
 sudo make PREFIX=/usr install
-systemctl --user enable --now password-layout-tty.service
 ```
 
-`make install` only puts files in place (it honours `DESTDIR` and `PREFIX`);
-the service is a per-user one, so each user enables it themselves. It starts
-with the graphical session.
+`make install` only puts files in place (it honours `DESTDIR` and `PREFIX`).
+The service is enabled for every user through
+`graphical-session.target.wants` and starts with the next graphical session;
+fcitx5 loads the addon when it next starts.
 
 Other targets: `make test`, and `make bench` for the measurements in
 [BENCHMARKS.md](BENCHMARKS.md).
+
+## Troubleshooting
+
+- `password-layout status` — current layout, who holds Latin (`tty` for
+  terminals, `im` for graphical applications), which terminals are at a prompt
+  and whether one of them is in the focused window.
+- Every actual switch is logged, one line each way:
+  `journalctl --user -u password-layout-tty` for terminals, the fcitx5 log for
+  graphical applications (`journalctl --user -u omarchy-fcitx5` on Omarchy).
+- What fcitx5 knows about the focused field: `tools/fcitx-watch` from a
+  checkout. For the addon's own debug output:
+  `busctl --user call org.fcitx.Fcitx5 /controller org.fcitx.Fcitx.Controller1 SetLogRule s passwordlayout=5`.
 
 ## How it works
 

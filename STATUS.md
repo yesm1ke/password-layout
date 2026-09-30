@@ -8,7 +8,7 @@ Updated with every change. The stages are described in [PLAN.md](PLAN.md).
 | 2. Survey of graphical applications | browsers done; Qt: blocked by an upstream fcitx5-qt bug (backlog) |
 | 3. fcitx5 addon | works in Zen and Chromium (checked by hand); released in 0.2.0 |
 | 4. Browser | not needed: Zen and Chromium mark password fields |
-| 5. Finishing | not started |
+| 5. Finishing | setup without manual steps, Latin layout by name, logging (0.4.0) |
 
 ## Next steps
 
@@ -18,7 +18,7 @@ Updated with every change. The stages are described in [PLAN.md](PLAN.md).
 2. tmux: a prompt inside tmux is not recognised (confirmed). There is a way: tmux
    reports which pane is on which terminal and which client is attached to which
    session. To be done if tmux matters.
-3. Decide about prompts that draw asterisks (see stage 1 in the plan).
+3. Prompts that draw asterisks: deferred to the backlog.
 4. Start the survey of stage 2.
 
 Deferred problems are in [BACKLOG.md](BACKLOG.md), resource measurements in
@@ -311,7 +311,32 @@ tmux support; nothing else changed. Built from the tag and published like 0.2.0.
 Installed on the development machine: `pacman -Q` shows 0.3.0-1 and the
 restarted service runs the new binary.
 
+#### Setup without manual steps, Latin layout by name
+
+Asked for by the user as the next most valuable things for other people.
+
+- The package ships `graphical-session.target.wants/password-layout-tty.service`,
+  so the service is enabled for every user, the way gnupg ships its sockets.
+  The install script starts it and restarts fcitx5 in the sessions of
+  logged-in users (`systemctl --user --machine=<user>@`; fcitx5 through
+  `omarchy-fcitx5.service` when it exists, otherwise through its D-Bus
+  `Restart`), restarts both on upgrade, and stops/unloads on removal. Checked
+  by running the upgrade hook as the user: the watcher and fcitx5 both came
+  back with new process ids and the addon loaded. Not yet checked as root
+  through pacman, nor the D-Bus branch for systems without Omarchy's unit.
+- The Latin layout is the first one not in Omarchy's list of non-Latin layout
+  codes (a `latin` variant counts as Latin), read from Hyprland's `layout` and
+  `variant` fields. No Latin layout means no switching. Checked live by setting
+  `kb_layout` to `ru,us` through `hyprctl eval`: Latin was layout 1 and the
+  switch went there and back.
+- Every actual switch is logged, e.g. `password-layout: Latin for tty (layout
+  1, was 0)` and `password-layout: layout 0 restored (tty left)`. The state
+  file now records whether Latin was switched to at all (`-1` when not).
+- README: requirements, a two-line install, a troubleshooting section.
+- Backlog: Electron password managers, prompts with asterisks, and a note that
+  the Omarchy lock screen is probably hit by the fcitx5-qt bug.
+- Tests: 21.
+
 State at the end of the day: stage 1 is done, installed and running as
-`password-layout-tty.service`; 14 tests pass. Open: the check by typing,
-prompts with asterisks, and the backlog: the silent prompt, prompts under
+`password-layout-tty.service`; 14 tests pass. Open: the check by typing, and the backlog: the silent prompt, prompts under
 `sudo`, the AUR, and a release procedure. The licence is MIT.
