@@ -381,6 +381,12 @@ macOS is mentioned only as the logic users know, without its API. The rule
 moved from "How it works" to its own section, together with what the project
 does not do (fcitx5 input methods are not touched, the keyboard is not guarded).
 
+#### Release 0.5.0
+
+The layout is chosen by the rule: no switch when the active layout is Latin,
+otherwise the last used Latin one. Built from the tag and published like the
+earlier releases.
+
 State at the end of the day: stage 1 is done, installed and running as
 `password-layout-tty.service`; 14 tests pass. Open: the check by typing, and the backlog: the silent prompt, prompts under
 `sudo`, the AUR, and a release procedure. The licence is MIT.

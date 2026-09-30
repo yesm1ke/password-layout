@@ -1,7 +1,7 @@
 # Maintainer: yesm1ke <yesm1ke@users.noreply.github.com>
 
 pkgname=password-layout
-pkgver=0.4.0
+pkgver=0.5.0
 pkgrel=1
 pkgdesc="Latin keyboard layout while you type a password: the last used Latin one, then yours back (Hyprland)"
 arch=('x86_64' 'aarch64')

@@ -14,7 +14,7 @@ USER_UNIT_DIR := $(HOME)/.config/systemd/user
 
 UNIT := password-layout-tty.service
 
-VERSION := 0.4.0
+VERSION := 0.5.0
 
 # The fcitx5 addon (password fields in graphical applications) is built when
 # fcitx5's development files are present, and skipped otherwise.

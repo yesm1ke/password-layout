@@ -61,8 +61,8 @@ On Arch-based systems (Arch, Omarchy, …) install the package from the latest
 [release](https://github.com/yesm1ke/password-layout/releases):
 
 ```
-curl -LO https://github.com/yesm1ke/password-layout/releases/download/v0.4.0/password-layout-0.4.0-1-x86_64.pkg.tar.zst
-sudo pacman -U password-layout-0.4.0-1-x86_64.pkg.tar.zst
+curl -LO https://github.com/yesm1ke/password-layout/releases/download/v0.5.0/password-layout-0.5.0-1-x86_64.pkg.tar.zst
+sudo pacman -U password-layout-0.5.0-1-x86_64.pkg.tar.zst
 ```
 
 That is all. The service is enabled for every user by the package, and the
