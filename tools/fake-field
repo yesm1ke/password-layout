@@ -1,0 +1,44 @@
+#!/usr/bin/env python3
+"""Pretend to be an application with a focused input field, over fcitx5's D-Bus
+input-method interface, to test the addon without clicking around.
+
+Usage: tools/fake-field [--password] [seconds]
+
+Creates an input context, marks it as a password field if asked, focuses it
+for the given time (default 3 s), then drops focus and exits.
+"""
+
+import sys
+import time
+
+import gi
+
+gi.require_version("Gio", "2.0")
+from gi.repository import Gio, GLib
+
+PASSWORD = 1 << 3
+
+args = sys.argv[1:]
+password = "--password" in args
+seconds = float(next((a for a in args if not a.startswith("--")), 3))
+
+bus = Gio.bus_get_sync(Gio.BusType.SESSION)
+
+
+def call(path, interface, method, signature=None, *values):
+    parameters = GLib.Variant(signature, values) if signature else None
+    return bus.call_sync("org.fcitx.Fcitx5", path, interface, method, parameters,
+                         None, Gio.DBusCallFlags.NONE, -1, None)
+
+
+reply = call("/org/freedesktop/portal/inputmethod", "org.fcitx.Fcitx.InputMethod1",
+             "CreateInputContext", "(a(ss))", [("program", "fake-field")])
+context = reply.unpack()[0]
+ic = "org.fcitx.Fcitx.InputContext1"
+
+call(context, ic, "SetCapability", "(t)", PASSWORD if password else 0)
+call(context, ic, "FocusIn")
+print(f"focused a {'password' if password else 'plain'} field for {seconds:g} s", flush=True)
+time.sleep(seconds)
+call(context, ic, "FocusOut")
+call(context, ic, "DestroyIC")

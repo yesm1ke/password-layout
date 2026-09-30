@@ -23,12 +23,13 @@ afterwards — for a Hyprland session.
 
 ## What works today
 
-Password prompts in terminals: `sudo`, `ssh`, `read -s`, and anything else that
-reads a password the way `getpass` does. It works in any terminal emulator
-(tested in Ghostty and foot); there is no list of supported terminals.
-
-Password fields in graphical applications and the browser are planned, see
-[PLAN.md](PLAN.md).
+- **Terminals**: password prompts of `sudo`, `ssh`, `read -s`, and anything else
+  that reads a password the way `getpass` does. Any terminal emulator (tested in
+  Ghostty and foot); there is no list of supported terminals.
+- **Browsers**: password fields in Zen (Firefox-based) and Chromium, through an
+  addon for the fcitx5 input method. Other applications work if they mark their
+  password fields for the input method, as these browsers do; Qt applications
+  are not surveyed yet.
 
 The scope is deliberately narrow: one person at a real keyboard in a Hyprland
 session. Virtual consoles, the boot and disk-unlock screens, remote machines and
@@ -39,6 +40,9 @@ other compositors are out of scope.
 - Hyprland, with the Latin layout **first** in `kb_layout` (for example
   `us,ru`). Layout index 0 is what gets selected for passwords.
 - `g++` with C++20 support and `make`. There are no library dependencies.
+- For password fields in graphical applications: fcitx5 running as the input
+  method (Omarchy starts it by default), and its development files at build
+  time. Without them only the terminal part is built.
 - systemd, for the user service.
 
 ## Install
@@ -106,6 +110,13 @@ window, which is decided by walking the process tree from the terminal up to the
 window's process. When the prompt ends, or focus moves elsewhere, the previous
 layout is restored.
 
+Graphical applications are a different story: they do tell the input method
+what kind of field has focus, and mark password fields — the same fact macOS
+acts on. The fcitx5 addon (`libpasswordlayout.so`) follows focus and that mark.
+It never talks to the compositor on fcitx5's own thread, which every key press
+goes through; a worker thread applies only the latest wish, so hopping across
+fields costs at most one switch and a slow compositor cannot delay typing.
+
 `password-layout` is one binary with subcommands:
 
 | Subcommand | Purpose |
@@ -114,11 +125,12 @@ layout is restored.
 | `enter <who>` / `leave <who>` | for other sources: "Latin is needed" / "no longer needed" |
 | `status` | current layout, who is holding Latin, which terminals are at a prompt |
 
-`enter` and `leave` exist so that more than one source can ask for Latin. The
-layout that was active before the first `enter` is restored after the last
-`leave`; it is kept in `$XDG_RUNTIME_DIR/password-layout/state`.
+The terminal service and the addon hold Latin under separate names (`tty` and
+`im`). The layout that was active before the first of them asked for Latin is
+restored after the last one lets go; it is kept in
+`$XDG_RUNTIME_DIR/password-layout/state`.
 
-Source layout: `src/tty.*` recognises a prompt and finds the window that owns
+Source layout: `src/fcitx/` is the fcitx5 addon, `src/tty.*` recognises a prompt and finds the window that owns
 the terminal, `src/activity.*` waits for terminal output, `src/compositor.*`
 talks to Hyprland, `src/state.*` tracks who holds Latin and what to restore,
 `src/main.cpp` has the subcommands and the service loop.

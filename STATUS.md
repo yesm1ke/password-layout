@@ -5,9 +5,9 @@ Updated with every change. The stages are described in [PLAN.md](PLAN.md).
 | Stage | State |
 |---|---|
 | 1. Terminals | works and is installed (C++, driven by kernel events); awaiting a check by hand |
-| 2. Survey of graphical applications | in progress |
-| 3. fcitx5 addon | not started |
-| 4. Browser | depends on stage 2 |
+| 2. Survey of graphical applications | browsers done; Qt applications not surveyed |
+| 3. fcitx5 addon | works with simulated fields; awaiting a check in real browsers |
+| 4. Browser | not needed: Zen and Chromium mark password fields |
 | 5. Finishing | not started |
 
 ## Next steps
@@ -224,6 +224,31 @@ no field clicked.)
 
 Both browsers are covered by the fcitx5 route. Still to survey: Telegram (Qt),
 the polkit prompt.
+
+#### Stage 3: the fcitx5 addon
+
+`src/fcitx/passwordlayout.cpp`, built by `make` when fcitx5's development files
+are present, installed by both `make install` and `make install-user`.
+
+- fcitx5 5.1.22 loads it ("Loaded addon passwordlayout"). An absolute path in
+  `Library=` works, so the per-user install needs no drop-in for fcitx5's
+  service, contrary to the plan.
+- Checked with `tools/fake-field`, which acts as an application over fcitx5's
+  D-Bus interface, with a Russian layout active:
+
+| Situation | Layout |
+|---|---|
+| password field focused | Latin, held as `im` |
+| focus leaves it | Russian |
+| plain field focused | Russian, untouched |
+| a focused plain field turns into a password field ("show password" in reverse) | Latin |
+| and back to plain | Russian |
+| password field, then quickly a plain one | Russian |
+| password field destroyed while focused (application closes) | Russian |
+
+Not yet checked: real password fields in Zen and Chromium, and the packaged
+install (the addon is not in the 0.1.0 package). On the development machine the
+addon is loaded from a hand-made description pointing at `build/`.
 
 State at the end of the day: stage 1 is done, installed and running as
 `password-layout-tty.service`; 14 tests pass. Open: the check by typing, tmux,

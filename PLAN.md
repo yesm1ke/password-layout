@@ -87,13 +87,22 @@ needed for either.
 
 ## Stage 3. fcitx5 addon
 
-A small C++ module that subscribes to input-context focus and capability changes
-and tells the shared part "Latin is needed" / "no longer needed" — either by
-running `password-layout enter im` / `leave im` or by linking `src/state.*`
-directly. It builds with `g++` and `pkg-config Fcitx5Core`, no cmake. It installs
-under `~/.local`; fcitx5 learns the library path through a drop-in for its
-service (`FCITX_ADDON_DIRS`), and the stock unit is not edited. On Omarchy that
-unit is `omarchy-fcitx5.service`.
+A C++ module, `src/fcitx/passwordlayout.cpp`, loaded by fcitx5. It watches
+input-context focus-in, focus-out and capability changes, and wants Latin
+exactly while the focused field carries the Password capability. It links
+`src/state.*` and `src/compositor.*` directly and holds Latin as `im`.
+
+fcitx5 handles every key press on a single thread, so the addon does no I/O
+there: a worker thread talks to Hyprland and applies only the latest wish.
+When fcitx5 exits, the worker gives the layout back.
+
+Installing: the packaged install puts the library in fcitx5's own addon
+directory; `make install-user` puts it under `~/.local/lib/password-layout` and
+names it by absolute path in the addon description, which fcitx5 accepts, so no
+change to fcitx5's service is needed. fcitx5 loads the addon when it starts.
+
+Testing without clicking: `tools/fake-field` acts as an application over
+fcitx5's D-Bus interface and focuses a plain or a password field.
 
 ## Stage 4. Browser, if stage 3 is not enough
 
