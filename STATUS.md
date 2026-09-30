@@ -322,8 +322,9 @@ Asked for by the user as the next most valuable things for other people.
   `omarchy-fcitx5.service` when it exists, otherwise through its D-Bus
   `Restart`), restarts both on upgrade, and stops/unloads on removal. Checked
   by running the upgrade hook as the user: the watcher and fcitx5 both came
-  back with new process ids and the addon loaded. Not yet checked as root
-  through pacman, nor the D-Bus branch for systems without Omarchy's unit.
+  back with new process ids and the addon loaded. Checked as root through
+  pacman with 0.4.0 (below); the D-Bus branch for systems without Omarchy's
+  unit is not checked.
 - The Latin layout is the first one not in Omarchy's list of non-Latin layout
   codes (a `latin` variant counts as Latin), read from Hyprland's `layout` and
   `variant` fields. No Latin layout means no switching. Checked live by setting
@@ -341,6 +342,12 @@ Asked for by the user as the next most valuable things for other people.
 
 Setup without manual steps, Latin layout by name, switch logging. Built from the
 tag and published like the earlier releases.
+
+Installed on the development machine with `pacman -U` as root: the install
+script restarted the watcher and fcitx5 in the running session (both came back
+at the moment of the upgrade, the addon loaded), with nothing done by hand. A
+simulated password field then logged `Latin for im (layout 0, was 1)` and
+`layout 1 restored (im left)` in fcitx5's journal.
 
 State at the end of the day: stage 1 is done, installed and running as
 `password-layout-tty.service`; 14 tests pass. Open: the check by typing, and the backlog: the silent prompt, prompts under
