@@ -5,7 +5,7 @@ Updated with every change. The stages are described in [PLAN.md](PLAN.md).
 | Stage | State |
 |---|---|
 | 1. Terminals | works and is installed (C++, driven by kernel events); awaiting a check by hand |
-| 2. Survey of graphical applications | not started |
+| 2. Survey of graphical applications | in progress |
 | 3. fcitx5 addon | not started |
 | 4. Browser | depends on stage 2 |
 | 5. Finishing | not started |
@@ -173,6 +173,22 @@ Cause: `sudo` runs its command in a root-owned pseudo-terminal that the service
 cannot open. Recorded in [BACKLOG.md](BACKLOG.md) with the options; the README
 limitation was rewritten to say this plainly, as it covers far more than the
 `sudo -i` it used to mention.
+
+#### Decision: prompts under sudo stay in the backlog
+
+Weighed on 2026-09-30: a setgid-`tty` helper would add roughly 200–300 lines and
+a privileged binary, cost 0.25–0.5% of a core while a command under `sudo`
+prints (estimated, not measured), and help only with passwords typed inside
+commands run under `sudo` — `sudo`'s own prompt already works, and the case that
+triggered this was fixed at its source. Password fields in graphical
+applications come first.
+
+#### Stage 2 started
+
+`tools/fcitx-watch` prints, on every change, the focused window and what fcitx5
+knows about the focused field, with the password flag decoded. First finding
+before any clicking: Chromium runs without `--enable-wayland-ime`, so it does
+not talk to fcitx5 at all.
 
 State at the end of the day: stage 1 is done, installed and running as
 `password-layout-tty.service`; 14 tests pass. Open: the check by typing, tmux,

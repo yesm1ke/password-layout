@@ -1,0 +1,47 @@
+#!/bin/bash
+# Survey tool for stage 2: prints, whenever it changes, which window has focus
+# and what fcitx5 knows about the focused input field - above all whether the
+# application marked it as a password field.
+#
+# Usage: tools/fcitx-watch [seconds]   (default: until Ctrl+C)
+#
+# fcitx5 only sees applications that talk to an input method: Wayland clients
+# through text-input, GTK and Qt ones also through their fcitx modules. "no
+# focused input field" can mean the application gave the field no input
+# method at all, which some browsers do for password fields.
+
+set -uo pipefail
+
+duration=${1:-0}
+start=$SECONDS
+last=""
+
+decode() {
+  local cap=$((16#$1)) flags=()
+  (( cap & (1 << 3) )) && flags+=(PASSWORD)
+  (( cap & (1 << 36) )) && flags+=(sensitive)
+  (( cap & (1 << 40) )) && flags+=(disabled)
+  (( cap & (1 << 32) )) && flags+=(terminal)
+  (( cap & (1 << 7) )) && flags+=(email)
+  (( cap & (1 << 12) )) && flags+=(url)
+  echo "${flags[*]:-none}"
+}
+
+while (( duration == 0 || SECONDS - start < duration )); do
+  window=$(hyprctl activewindow -j 2>/dev/null | jq -r '.class // "none"')
+  focused=$(busctl --user call org.fcitx.Fcitx5 /controller org.fcitx.Fcitx.Controller1 DebugInfo 2>/dev/null |
+    sed 's/\\n/\n/g' | grep 'focus:1' | head -1)
+
+  if [[ $focused =~ program:([^ ]*)\ frontend:([^ ]*)\ cap:([0-9a-fA-F]+) ]]; then
+    program=${BASH_REMATCH[1]:-?} frontend=${BASH_REMATCH[2]} cap=${BASH_REMATCH[3]}
+    line="window=$window  field: program=$program frontend=$frontend cap=$cap flags=$(decode "$cap")"
+  else
+    line="window=$window  no focused input field"
+  fi
+
+  if [[ $line != "$last" ]]; then
+    printf '%s  %s\n' "$(date +%T.%N | cut -c1-12)" "$line"
+    last=$line
+  fi
+  sleep 0.2
+done
