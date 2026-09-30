@@ -307,6 +307,8 @@ Released in 0.3.0. Not yet: a check by hand.
 #### Release 0.3.0
 
 tmux support; nothing else changed. Built from the tag and published like 0.2.0.
+Installed on the development machine: `pacman -Q` shows 0.3.0-1 and the
+restarted service runs the new binary.
 
 State at the end of the day: stage 1 is done, installed and running as
 `password-layout-tty.service`; 14 tests pass. Open: the check by typing,
