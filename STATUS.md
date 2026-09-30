@@ -302,7 +302,8 @@ Checked:
   window gives Russian; switching back gives Latin; closing tmux gives Russian.
 - Cost: see BENCHMARKS.md — no measurable difference while a prompt waits.
 
-Released in 0.3.0. Not yet: a check by hand.
+Released in 0.3.0 and checked by hand: `sudo -k true` in a tmux pane switches
+the layout to Latin and back.
 
 #### Release 0.3.0
 
