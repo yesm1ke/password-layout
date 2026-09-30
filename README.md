@@ -111,7 +111,9 @@ enough; the one exception is described in [BACKLOG.md](BACKLOG.md).
 
 The layout is switched only if the prompting terminal belongs to the focused
 window, which is decided by walking the process tree from the terminal up to the
-window's process. When the prompt ends, or focus moves elsewhere, the previous
+window's process. Inside tmux that walk ends at the tmux server, so tmux itself is
+asked which pane is active and which of its clients — ordinary processes inside
+a terminal window — shows that session. When the prompt ends, or focus moves elsewhere, the previous
 layout is restored.
 
 Graphical applications are a different story: they do tell the input method
@@ -136,13 +138,16 @@ restored after the last one lets go; it is kept in
 
 Source layout: `src/fcitx/` is the fcitx5 addon, `src/tty.*` recognises a prompt and finds the window that owns
 the terminal, `src/activity.*` waits for terminal output, `src/compositor.*`
-talks to Hyprland, `src/state.*` tracks who holds Latin and what to restore,
+talks to Hyprland, `src/tmux.*` asks tmux about panes and clients,
+`src/state.*` tracks who holds Latin and what to restore,
 `src/main.cpp` has the subcommands and the service loop.
 
 ## Limitations
 
-- **tmux and similar multiplexers**: a prompt inside tmux is not recognised,
-  because the tmux server is not a child of the terminal window.
+- **Terminal multiplexers other than tmux** (zellij, screen): a prompt inside
+  them is not recognised, because their server is not a child of the terminal
+  window. tmux is handled: a prompt in the visible pane of a session shown in
+  the focused window counts, one in a background pane or window does not.
 - **Prompts that draw their own asterisks** (`systemd-ask-password`, `sudo` with
   `pwfeedback`) turn line input off as well and look like any full-screen
   program.

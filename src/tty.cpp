@@ -135,23 +135,26 @@ std::unordered_map<pid_t, Process> readProcesses() {
     return processes;
 }
 
-bool windowOwnsTty(pid_t windowPid, const std::set<dev_t> &devices,
-                   const std::unordered_map<pid_t, Process> &processes) {
-    if (windowPid <= 0) {
+bool descendsFrom(pid_t pid, pid_t ancestor, const std::unordered_map<pid_t, Process> &processes) {
+    if (ancestor <= 0) {
         return false;
     }
-    for (const auto &[pid, process] : processes) {
-        if (!devices.contains(process.tty)) {
-            continue;
+    // Bounded, in case a parent chain read mid-change ever loops.
+    for (size_t steps = 0; pid > 1 && steps <= processes.size(); ++steps) {
+        if (pid == ancestor) {
+            return true;
         }
-        // Bounded, in case a parent chain read mid-change ever loops.
-        pid_t current = pid;
-        for (size_t steps = 0; current > 1 && steps <= processes.size(); ++steps) {
-            if (current == windowPid) {
-                return true;
-            }
-            auto parent = processes.find(current);
-            current = parent == processes.end() ? 0 : parent->second.parent;
+        auto parent = processes.find(pid);
+        pid = parent == processes.end() ? 0 : parent->second.parent;
+    }
+    return false;
+}
+
+bool windowOwnsTty(pid_t windowPid, const std::set<dev_t> &devices,
+                   const std::unordered_map<pid_t, Process> &processes) {
+    for (const auto &[pid, process] : processes) {
+        if (devices.contains(process.tty) && descendsFrom(pid, windowPid, processes)) {
+            return true;
         }
     }
     return false;

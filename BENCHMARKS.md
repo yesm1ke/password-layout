@@ -19,6 +19,21 @@ Ghostty, 6–9 terminals open). CPU is a share of one core. To repeat them:
 
 The current binary is 100 KB.
 
+## A prompt pending in tmux
+
+Measured 2026-09-30 over 30 s each, same machine, with a password prompt left
+pending in a terminal outside the focused window:
+
+| Where the prompt is | CPU in 30 s | Wakeups in 30 s |
+|---|---|---|
+| a plain terminal | 29.1 ms | 425 |
+| a tmux pane, with a client attached | 29.7 ms | 403 |
+
+Asking tmux costs nothing measurable while a prompt just sits there: tmux is
+only asked again when the prompts, the focused window or a client's screen
+change. Both rows are ~0.1% of a core, the price of polling while any prompt is
+pending.
+
 ## Cost of one wakeup
 
 Polling and the current service were measured at the same time, under the same

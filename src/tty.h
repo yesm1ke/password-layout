@@ -30,6 +30,9 @@ std::unordered_map<pid_t, Process> readProcesses();
 // Device number from the tty_nr field of /proc/<pid>/stat.
 dev_t ttyDevice(unsigned long ttyNr);
 
+// Whether `pid` is `ancestor` or one of its descendants.
+bool descendsFrom(pid_t pid, pid_t ancestor, const std::unordered_map<pid_t, Process> &processes);
+
 // Whether any process on one of these terminals descends from the window's
 // process. No list of terminal emulators is needed this way.
 bool windowOwnsTty(pid_t windowPid, const std::set<dev_t> &devices,

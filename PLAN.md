@@ -62,9 +62,11 @@ The `password-layout watch-tty` service:
 Left in this stage:
 
 1. A check by hand with real `sudo` and `ssh` in Ghostty.
-2. tmux and similar: their server does not descend from the terminal window, so
-   a prompt inside tmux is not recognised. tmux itself can report which pane is
-   on which terminal and which client is attached to which session.
+2. tmux — done: when the walk up the process tree ends at a tmux server, the
+   server is asked (`list-panes`, `list-clients`) whether the pane is the active
+   one of a session that a client inside the focused window shows. tmux is asked
+   again only when a client's terminal redraws, which is what switching panes or
+   windows looks like from outside. zellij and screen are not handled.
 3. Decide about prompts that draw asterisks (`systemd-ask-password`, `sudo` with
    `pwfeedback`): line input is off as well, which makes them indistinguishable
    from an ordinary full-screen program.

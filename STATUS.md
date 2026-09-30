@@ -281,7 +281,30 @@ no input context at all).
   field already focused (KeePassXC, the polkit prompt) until Arch ships
   fcitx5-qt 5.1.16.
 
+#### tmux
+
+A prompt in a tmux pane was recognised as a prompt but never as "in the focused
+window": the pane's processes descend from the tmux server, not from the
+terminal window. Now, when the walk up the process tree ends at a tmux server,
+`src/tmux.*` finds that server's socket and asks it which pane is active and
+which clients show which session; a client is a process inside a terminal
+window, so the usual walk works from there. tmux is asked again only when a
+client's terminal redraws.
+
+Checked:
+
+- Tests (17, 20 runs in a row without a failure), including one with a private
+  tmux server, a client attached from the test, and a switch to another tmux
+  window. The first version failed on this machine's `base-index 1`; windows
+  are now named by their ids.
+- Live, with the new build standing in for the service and a Russian layout: a
+  prompt in tmux in a new Ghostty window gives Latin; switching tmux to another
+  window gives Russian; switching back gives Latin; closing tmux gives Russian.
+- Cost: see BENCHMARKS.md — no measurable difference while a prompt waits.
+
+Not yet: a check by hand, and a release (the installed 0.2.0 does not have it).
+
 State at the end of the day: stage 1 is done, installed and running as
-`password-layout-tty.service`; 14 tests pass. Open: the check by typing, tmux,
+`password-layout-tty.service`; 14 tests pass. Open: the check by typing,
 prompts with asterisks, and the backlog: the silent prompt, prompts under
 `sudo`, the AUR, and a release procedure. The licence is MIT.

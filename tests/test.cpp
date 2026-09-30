@@ -1,6 +1,7 @@
 #include "activity.h"
 #include "compositor.h"
 #include "state.h"
+#include "tmux.h"
 #include "tty.h"
 
 #include <chrono>
@@ -8,8 +9,10 @@
 #include <cstdio>
 #include <cstdlib>
 #include <functional>
+#include <optional>
 #include <pty.h>
 #include <string>
+#include <sys/stat.h>
 #include <sys/sysmacros.h>
 #include <sys/wait.h>
 #include <thread>
@@ -230,6 +233,87 @@ void promptIsFoundAmongGivenTerminals() {
     CHECK(passwordPtysAmong({}).empty());
 }
 
+void tmuxOutputIsParsed() {
+    auto panes = parseTmuxPanes("/dev/pts/7 $0 1 1\n/dev/pts/8 $0 1 0\n/dev/pts/9 $1 0 1\n");
+    CHECK(panes.size() == 3);
+    CHECK(panes.size() == 3 && panes[0].terminal == "/dev/pts/7" && panes[0].session == "$0" &&
+          panes[0].active);
+    CHECK(panes.size() == 3 && !panes[1].active); // pane in the active window, not active itself
+    CHECK(panes.size() == 3 && !panes[2].active); // active pane of a window in the background
+
+    auto clients = parseTmuxClients("4242 $0 /dev/pts/3\n");
+    CHECK(clients.size() == 1);
+    CHECK(clients.size() == 1 && clients[0].pid == 4242 && clients[0].session == "$0" &&
+          clients[0].terminal == "/dev/pts/3");
+    CHECK(parseTmuxPanes("").empty() && parseTmuxClients("").empty());
+}
+
+void commandsAreRunAndTimedOut() {
+    CHECK(runCommand({"echo", "hello"}) == std::optional<std::string>("hello\n"));
+    CHECK(!runCommand({"false"}));
+    CHECK(!runCommand({"password-layout-no-such-command"}));
+    auto started = std::chrono::steady_clock::now();
+    CHECK(!runCommand({"sleep", "5"}, 200));
+    CHECK(std::chrono::steady_clock::now() - started < std::chrono::seconds(2));
+}
+
+// A private tmux server for one test, gone afterwards.
+class TmuxServer {
+public:
+    static constexpr const char *kName = "password-layout-test";
+    TmuxServer() { tmux({"kill-server"}); }
+    ~TmuxServer() { tmux({"kill-server"}); }
+    static std::optional<std::string> tmux(std::vector<std::string> args) {
+        args.insert(args.begin(), {"tmux", "-L", kName});
+        return runCommand(args, 3000);
+    }
+};
+
+void tmuxPaneIsSeenOnlyWhileVisible() {
+    if (!runCommand({"tmux", "-V"})) {
+        std::printf("    skipped: tmux is not installed\n");
+        return;
+    }
+    TmuxServer server;
+    // Window numbering depends on the user's base-index, so windows are named
+    // by the ids tmux prints for them.
+    auto first = TmuxServer::tmux({"new-session", "-d", "-P", "-F", "#{pane_tty}", "-s", "t",
+                                   "-x", "80", "-y", "24", "bash -c 'read -s -p pw: x; sleep 30'"});
+    auto second = TmuxServer::tmux({"new-window", "-d", "-P", "-F", "#{window_id}", "-t", "t:",
+                                    "sleep 30"});
+    CHECK(first && second);
+    if (!first || !second) {
+        return;
+    }
+    // The client runs on a terminal this test process started, so the test
+    // plays the part of the terminal window.
+    PtyChild client({"tmux", "-L", TmuxServer::kName, "attach", "-t", "t"});
+
+    struct stat info;
+    std::string path = first->substr(0, first->find('\n'));
+    CHECK(stat(path.c_str(), &info) == 0);
+    dev_t pane = info.st_rdev;
+
+    Tmux tmux;
+    auto shown = tmux.ask(pane, getpid(), readProcesses());
+    CHECK(shown && shown->visibleInWindow);
+    CHECK(shown && shown->clientTerminals.size() == 1);
+    CHECK(passwordPtysAmong({path}).contains(path)); // and the pane is at the prompt
+
+    // Another window, the one the client is not running in.
+    auto elsewhere = tmux.ask(pane, client.pid() + 100000, readProcesses());
+    CHECK(elsewhere && !elsewhere->visibleInWindow);
+
+    // Switch the session to its second window: the pane is out of sight.
+    CHECK(TmuxServer::tmux({"select-window", "-t", second->substr(0, second->find('\n'))}));
+    auto hidden = tmux.ask(pane, getpid(), readProcesses());
+    CHECK(hidden && !hidden->visibleInWindow);
+
+    // A terminal that is not a tmux pane at all.
+    PtyChild plain({"cat"});
+    CHECK(!tmux.ask(readProcesses()[plain.pid()].tty, getpid(), readProcesses()));
+}
+
 } // namespace
 
 int main() {
@@ -248,6 +332,9 @@ int main() {
         {"terminal output names the terminal", terminalOutputNamesTheTerminal},
         {"output through /dev/tty makes every terminal suspect", outputThroughDevTtyMakesEveryTerminalSuspect},
         {"prompt is found among given terminals", promptIsFoundAmongGivenTerminals},
+        {"tmux output is parsed", tmuxOutputIsParsed},
+        {"commands are run and timed out", commandsAreRunAndTimedOut},
+        {"tmux pane is seen only while visible", tmuxPaneIsSeenOnlyWhileVisible},
     };
     for (const auto &[name, test] : tests) {
         int before = failures;
