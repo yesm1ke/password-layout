@@ -162,7 +162,8 @@ tables, method and caveats are in [BENCHMARKS.md](BENCHMARKS.md).
 - The first install instruction was wrong: `pacman -U <url>` fails with a 404 on
   the `.sig` file, because pacman requires a signature for a package given as a
   URL and the release is unsigned. The instruction now downloads the file first.
-  A real install on the development machine is still to be confirmed.
+  Installed that way on the development machine: `pacman -Q` shows 0.1.0-1 and
+  the service runs from `/usr/bin`, replacing the `make install-user` copy.
 - The AUR is pending an account; see [BACKLOG.md](BACKLOG.md).
 
 State at the end of the day: stage 1 is done, installed and running as
