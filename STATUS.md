@@ -6,7 +6,7 @@ Updated with every change. The stages are described in [PLAN.md](PLAN.md).
 |---|---|
 | 1. Terminals | works and is installed (C++, driven by kernel events); awaiting a check by hand |
 | 2. Survey of graphical applications | browsers done; Qt applications not surveyed |
-| 3. fcitx5 addon | works with simulated fields; awaiting a check in real browsers |
+| 3. fcitx5 addon | works in Zen and Chromium (checked by hand); not in a package yet |
 | 4. Browser | not needed: Zen and Chromium mark password fields |
 | 5. Finishing | not started |
 
@@ -246,7 +246,8 @@ are present, installed by both `make install` and `make install-user`.
 | password field, then quickly a plain one | Russian |
 | password field destroyed while focused (application closes) | Russian |
 
-Not yet checked: real password fields in Zen and Chromium, and the packaged
+Checked by hand afterwards: real password fields in Zen and Chromium switch to
+Latin and back. Not yet checked: the packaged
 install (the addon is not in the 0.1.0 package). On the development machine the
 addon is loaded from a hand-made description pointing at `build/`.
 
