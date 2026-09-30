@@ -52,10 +52,14 @@ On Arch-based systems (Arch, Omarchy, …) install the package from the latest
 service for your user:
 
 ```
-curl -LO https://github.com/yesm1ke/password-layout/releases/download/v0.1.0/password-layout-0.1.0-1-x86_64.pkg.tar.zst
-sudo pacman -U password-layout-0.1.0-1-x86_64.pkg.tar.zst
+curl -LO https://github.com/yesm1ke/password-layout/releases/download/v0.2.0/password-layout-0.2.0-1-x86_64.pkg.tar.zst
+sudo pacman -U password-layout-0.2.0-1-x86_64.pkg.tar.zst
 systemctl --user enable --now password-layout-tty.service
+systemctl --user restart omarchy-fcitx5.service    # on Omarchy; elsewhere: fcitx5 -rd
 ```
+
+The last line restarts fcitx5 so it loads the addon for password fields in
+graphical applications.
 
 Download first: the package is not signed, and pacman insists on a signature
 when it is handed a URL, but not for a local file.

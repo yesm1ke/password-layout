@@ -1,6 +1,6 @@
 pkgbase = password-layout
-	pkgdesc = Latin keyboard layout while typing a password in Hyprland, then the previous one back
-	pkgver = 0.1.0
+	pkgdesc = Latin keyboard layout while typing a password in Hyprland terminals and browsers, then the previous one back
+	pkgver = 0.2.0
 	pkgrel = 1
 	url = https://github.com/yesm1ke/password-layout
 	install = password-layout.install
@@ -11,7 +11,8 @@ pkgbase = password-layout
 	depends = gcc-libs
 	depends = glibc
 	depends = hyprland
-	source = password-layout::git+https://github.com/yesm1ke/password-layout.git#tag=v0.1.0
+	depends = fcitx5
+	source = password-layout::git+https://github.com/yesm1ke/password-layout.git#tag=v0.2.0
 	sha256sums = SKIP
 
 pkgname = password-layout

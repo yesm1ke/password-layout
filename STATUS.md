@@ -6,7 +6,7 @@ Updated with every change. The stages are described in [PLAN.md](PLAN.md).
 |---|---|
 | 1. Terminals | works and is installed (C++, driven by kernel events); awaiting a check by hand |
 | 2. Survey of graphical applications | browsers done; Qt: blocked by an upstream fcitx5-qt bug (backlog) |
-| 3. fcitx5 addon | works in Zen and Chromium (checked by hand); not in a package yet |
+| 3. fcitx5 addon | works in Zen and Chromium (checked by hand); released in 0.2.0 |
 | 4. Browser | not needed: Zen and Chromium mark password fields |
 | 5. Finishing | not started |
 
@@ -264,6 +264,18 @@ password hint. The Omarchy polkit prompt shows the same. It is fcitx5-qt issue
 
 Tried along the way without success: `QT_IM_MODULE=wayland` (the field then gets
 no input context at all).
+
+#### Release 0.2.0
+
+- The fcitx5 addon is in the package: `/usr/lib/fcitx5/libpasswordlayout.so` and
+  `/usr/share/fcitx5/addon/passwordlayout.conf`. The package now depends on
+  fcitx5, and its install script says to restart fcitx5.
+- A binary package that had slipped into the repository (downloaded into the
+  checkout, then committed with everything else) was removed from every commit
+  on `main`; built packages are now ignored anywhere in the tree.
+- Known problem, noted in the release: Qt applications that open with a password
+  field already focused (KeePassXC, the polkit prompt) until Arch ships
+  fcitx5-qt 5.1.16.
 
 State at the end of the day: stage 1 is done, installed and running as
 `password-layout-tty.service`; 14 tests pass. Open: the check by typing, tmux,
