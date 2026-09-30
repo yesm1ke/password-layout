@@ -1,0 +1,26 @@
+# Maintainer: yesm1ke <yesm1ke@users.noreply.github.com>
+
+pkgname=password-layout
+pkgver=0.1.0
+pkgrel=1
+pkgdesc="Latin keyboard layout while typing a password in Hyprland, then the previous one back"
+arch=('x86_64' 'aarch64')
+url="https://github.com/yesm1ke/password-layout"
+license=('MIT')
+depends=('gcc-libs' 'glibc' 'hyprland')
+makedepends=('git')
+install=password-layout.install
+# Built from the release tag. A tarball checksum cannot live in the same commit
+# that the tag points at, so the tag itself is the pin.
+source=("$pkgname::git+$url.git#tag=v$pkgver")
+sha256sums=('SKIP')
+
+build() {
+  cd "$pkgname"
+  make
+}
+
+package() {
+  cd "$pkgname"
+  make DESTDIR="$pkgdir" PREFIX=/usr install
+}
