@@ -12,9 +12,9 @@ Updated with every change. The stages are described in [PLAN.md](PLAN.md).
 
 ## Next steps
 
-1. By hand, with a non-Latin layout active: type `sudo -k true` in Ghostty and
-   connect somewhere over `ssh` with a password; confirm the layout becomes Latin
-   and comes back. This was verified programmatically, not by typing.
+1. By hand, with a non-Latin layout active: connect somewhere over `ssh` with a
+   password; confirm the layout becomes Latin and comes back. `sudo` was
+   checked by typing on 2026-09-30.
 2. tmux: a prompt inside tmux is not recognised (confirmed). There is a way: tmux
    reports which pane is on which terminal and which client is attached to which
    session. To be done if tmux matters.
@@ -386,6 +386,14 @@ does not do (fcitx5 input methods are not touched, the keyboard is not guarded).
 The layout is chosen by the rule: no switch when the active layout is Latin,
 otherwise the last used Latin one. Built from the tag and published like the
 earlier releases.
+
+Installed on the development machine with `pacman -U`: the install script
+restarted the watcher and fcitx5 (the addon unloaded and loaded again), and
+`status` shows the remembered Latin layout. The `sudo` for that install was a
+real password typed by hand in the terminal with Russian active: the journal
+has `Latin for tty (layout 0, was 1)` while it was typed and `layout 1
+restored (tty left)` after — the first check by typing, for `sudo` (by 0.4.0,
+which was still running). `ssh` has not been typed by hand yet.
 
 State at the end of the day: stage 1 is done, installed and running as
 `password-layout-tty.service`; 14 tests pass. Open: the check by typing, and the backlog: the silent prompt, prompts under
