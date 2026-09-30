@@ -5,7 +5,7 @@ Updated with every change. The stages are described in [PLAN.md](PLAN.md).
 | Stage | State |
 |---|---|
 | 1. Terminals | works and is installed (C++, driven by kernel events); awaiting a check by hand |
-| 2. Survey of graphical applications | browsers done; Qt applications not surveyed |
+| 2. Survey of graphical applications | browsers done; Qt: blocked by an upstream fcitx5-qt bug (backlog) |
 | 3. fcitx5 addon | works in Zen and Chromium (checked by hand); not in a package yet |
 | 4. Browser | not needed: Zen and Chromium mark password fields |
 | 5. Finishing | not started |
@@ -250,6 +250,20 @@ Checked by hand afterwards: real password fields in Zen and Chromium switch to
 Latin and back. Not yet checked: the packaged
 install (the addon is not in the 0.1.0 package). On the development machine the
 addon is loaded from a hand-made description pointing at `build/`.
+
+#### Qt applications: an upstream bug
+
+Reported by hand: KeePassXC opens with its password field focused and the
+layout does not switch; moving focus between fields makes it work. Traced with
+the addon's new debug log (off by default; `SetLogRule passwordlayout=5` over
+fcitx5's D-Bus controller turns it on) and `dbus-monitor`: the Qt input-method
+module sends only base capabilities for the first focus of a window, without the
+password hint. The Omarchy polkit prompt shows the same. It is fcitx5-qt issue
+#85, fixed upstream in 5.1.16; Arch has 5.1.15. Details in
+[BACKLOG.md](BACKLOG.md).
+
+Tried along the way without success: `QT_IM_MODULE=wayland` (the field then gets
+no input context at all).
 
 State at the end of the day: stage 1 is done, installed and running as
 `password-layout-tty.service`; 14 tests pass. Open: the check by typing, tmux,

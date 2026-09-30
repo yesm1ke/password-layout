@@ -47,6 +47,32 @@ polling. The kernel sends no inotify event for `tcsetattr`; the master side of
 a pseudo-terminal is notified in packet mode (`TIOCPKT`), but it belongs to the
 terminal emulator, not to us.
 
+## Qt: a password field focused when its window opens is not recognised
+
+**What happens.** KeePassXC opens its unlock dialog with the password field
+already focused, and the layout does not switch; after moving focus to another
+field and back it does. The Omarchy polkit prompt (Quickshell, also Qt) behaves
+the same way.
+
+**Cause — a bug in fcitx5-qt, not here.** When a window gets its first focus,
+the Qt module creates the input context asynchronously and, once it exists,
+sends a fixed set of base capabilities without asking the focused widget for its
+hints. The password hint (`ImhHiddenText`) only reaches fcitx5 on the next
+`update(Qt::ImHints)`, which moving focus triggers. Seen on 2026-09-30:
+`SetCapability 0xe001800072` for KeePassXC's focused password field, no
+password bit; the addon's debug log shows the focus-in with `password=0`.
+
+Upstream: reported as
+[fcitx/fcitx5-qt#85](https://github.com/fcitx/fcitx5-qt/issues/85), fixed by
+[#86](https://github.com/fcitx/fcitx5-qt/pull/86) ("No matter IC is created or
+not, update should update ICData", merged 2026-09-12), released in fcitx5-qt
+5.1.16 (2026-09-24). Arch still ships 5.1.15-1 as of 2026-09-30.
+
+**What to do.** Nothing in this project: once Arch updates `fcitx5-qt` to
+5.1.16, re-check KeePassXC and the polkit prompt, and close this entry. The
+addon cannot work around it — fcitx5 is simply never told the field is a
+password field.
+
 ## Prompts of programs run under sudo are not recognised
 
 **What happens.** Since 1.9.14 `sudo` enables `use_pty` by default: the command

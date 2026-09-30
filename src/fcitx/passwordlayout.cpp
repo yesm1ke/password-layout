@@ -29,6 +29,12 @@
 #include <fcitx/event.h>
 #include <fcitx/inputcontext.h>
 #include <fcitx/instance.h>
+#include <fcitx-utils/log.h>
+
+// Debug output, off by default. Turn on at runtime with
+//   busctl --user call org.fcitx.Fcitx5 /controller org.fcitx.Fcitx.Controller1 SetLogRule s passwordlayout=5
+FCITX_DEFINE_LOG_CATEGORY(passwordlayoutLog, "passwordlayout")
+#define PASSWORDLAYOUT_DEBUG() FCITX_LOGC(passwordlayoutLog, Debug)
 
 namespace {
 
@@ -119,6 +125,10 @@ public:
 
 private:
     void update(fcitx::InputContext *ic, bool leaving) {
+        PASSWORDLAYOUT_DEBUG() << (leaving ? "focus out" : "focus in or capability change")
+                               << " program=" << ic->program() << " focus=" << ic->hasFocus()
+                               << " password="
+                               << ic->capabilityFlags().test(fcitx::CapabilityFlag::Password);
         if (leaving) {
             // Focus moving between fields sends a focus-out before the next
             // focus-in; the worker only acts on where it ends up.
