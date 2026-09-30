@@ -4,9 +4,11 @@ The current state of each stage is in [STATUS.md](STATUS.md).
 
 ## Goal and scope
 
-While a password is being typed the layout becomes Latin by itself, and the
-previous layout returns afterwards — the behaviour macOS has in secure text
-fields and, through Secure Keyboard Entry, in terminals.
+Typing a password should not depend on the layout you happen to be in: while a
+password is being typed only Latin layouts are allowed, following the logic
+macOS users know. If the current layout is Latin, nothing changes; otherwise the
+last used Latin layout is switched to, and the previous layout returns
+afterwards. "Latin" means a layout not in Omarchy's list of non-Latin ones.
 
 In scope: application windows in a Hyprland session — terminals (Ghostty, foot
 and the like) and the browser.

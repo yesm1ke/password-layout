@@ -372,6 +372,15 @@ a German user from `de` to `us`.
   Layouts restored to `us,ru` afterwards.
 - Tests: 24.
 
+#### The description around the rule
+
+README, PLAN and the package description now start from the rule and the goal
+of making typing a password painless: Latin while a password is typed, the last
+used Latin layout if the current one is not Latin, the previous one back after.
+macOS is mentioned only as the logic users know, without its API. The rule
+moved from "How it works" to its own section, together with what the project
+does not do (fcitx5 input methods are not touched, the keyboard is not guarded).
+
 State at the end of the day: stage 1 is done, installed and running as
 `password-layout-tty.service`; 14 tests pass. Open: the check by typing, and the backlog: the silent prompt, prompts under
 `sudo`, the AUR, and a release procedure. The licence is MIT.

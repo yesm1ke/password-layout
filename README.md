@@ -1,25 +1,35 @@
 # password-layout
 
-Switches the keyboard layout to Latin while you type a password, and puts your
-layout back afterwards. For [Hyprland](https://hyprland.org/).
+Makes typing a password painless when you write in more than one language:
+while you type a password the keyboard layout is Latin. If the current layout is
+not Latin, the one you used last is switched to, and your layout comes back when
+the password is done. For [Hyprland](https://hyprland.org/).
 
 If you type in a non-Latin layout, you know the routine: `sudo` asks for a
 password, you type it blind, it is rejected, and only then do you notice the
 layout was wrong.
 
-## The macOS behaviour this copies
+## The rule
 
-macOS solves this at the system level. When focus enters a secure text field
-(a password box), the system turns on *Secure Event Input* and limits the
-keyboard to ASCII-capable input sources: if you were typing in Russian, Greek
-or Japanese, the input source flips to a Latin one on its own. When focus leaves
-the field, the input source you had before comes back. Terminals take part too:
-Terminal.app has *Secure Keyboard Entry*, and Ghostty on macOS detects a password
-prompt in the shell and enables secure input for as long as it is up.
+The logic is the one macOS users are used to: in a password field only Latin
+layouts are allowed, and the switch there and back happens by itself.
 
-Linux has no equivalent. `password-layout` reproduces the visible half of that
-mechanism — Latin while the password is being typed, the previous layout
-afterwards — for a Hyprland session.
+- if the active layout is already Latin, nothing changes — German stays German;
+- otherwise the Latin layout that was last in use is switched to, or the first
+  Latin one if none has been used yet;
+- when the password is done, the layout that was active before comes back.
+
+A layout counts as Latin unless its code is in the list of non-Latin layouts
+Omarchy itself uses (`ru`, `ua`, `gr`, `il`, `ara`, …); a `latin` variant, as in
+`rs(latin)`, counts as Latin. To know which Latin layout was last in use, the
+service follows layout switches through Hyprland's event socket.
+
+The same applies in terminals: a `sudo` or `ssh` password prompt counts as a
+password field.
+
+What it does not do: only keyboard layouts are switched. Input methods in fcitx5
+(Pinyin, Mozc and the like) are left alone, and other programs are not kept from
+reading the keyboard.
 
 ## What works today
 
@@ -109,20 +119,6 @@ Other targets: `make test`, and `make bench` for the measurements in
   `busctl --user call org.fcitx.Fcitx5 /controller org.fcitx.Fcitx.Controller1 SetLogRule s passwordlayout=5`.
 
 ## How it works
-
-**Which layout, like macOS.** When a password field or prompt appears:
-
-- if the active layout is already Latin, nothing changes — German stays German;
-- otherwise the Latin layout that was last in use is switched to (the service
-  follows layout switches through Hyprland's event socket), or the first Latin
-  one if none has been used yet;
-- when the password is done, the layout that was active before comes back.
-
-A layout counts as Latin unless its code is in the list of non-Latin layouts
-Omarchy itself uses (`ru`, `ua`, `gr`, `il`, `ara`, …); a `latin` variant, as in
-`rs(latin)`, counts as Latin. This is the Linux counterpart of macOS's
-"ASCII-capable input source".
-
 
 A terminal does not tell anyone that it is showing a password prompt. What gives
 a prompt away is the mode of its pseudo-terminal: **echo is off while line input
