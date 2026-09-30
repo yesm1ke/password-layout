@@ -337,6 +337,11 @@ Asked for by the user as the next most valuable things for other people.
   the Omarchy lock screen is probably hit by the fcitx5-qt bug.
 - Tests: 21.
 
+#### Release 0.4.0
+
+Setup without manual steps, Latin layout by name, switch logging. Built from the
+tag and published like the earlier releases.
+
 State at the end of the day: stage 1 is done, installed and running as
 `password-layout-tty.service`; 14 tests pass. Open: the check by typing, and the backlog: the silent prompt, prompts under
 `sudo`, the AUR, and a release procedure. The licence is MIT.
