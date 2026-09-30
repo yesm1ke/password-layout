@@ -80,9 +80,10 @@ busctl --user call org.fcitx.Fcitx5 /controller org.fcitx.Fcitx.Controller1 Debu
 
 For the focused context (`focus:1`) the password flag is bit `0x8` of `cap:`.
 To check: a password field on a web page in the browser, and Qt applications
-such as KeePassXC. The main question is Firefox-based browsers: they may disable
-the input method on a password field instead of setting the flag, in which case
-stage 4 is needed.
+such as KeePassXC. The main question was Firefox-based browsers: they might
+disable the input method on a password field instead of setting the flag.
+Answered: Zen and Chromium both set it (see STATUS.md), so stage 4 is not
+needed for either.
 
 ## Stage 3. fcitx5 addon
 

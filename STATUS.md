@@ -207,11 +207,23 @@ not switch the input method off in password fields, it marks them — the
 signal stage 3 needs. Stage 4 is not needed for Zen. The flag appears the
 moment the field gets focus and is gone when focus leaves it.
 
-A Chromium web-app window (`chrome-photos.google.com__-Default`) showed no
-focused input field at all, as expected without `--enable-wayland-ime`.
+#### Survey: Chromium marks them too, with no extra flags
 
-Still to survey: Chromium with the input method enabled, Telegram (Qt), the
-polkit prompt.
+The expectation was that Chromium needs `--enable-wayland-ime` to talk to an
+input method at all. It does not: Chromium as installed, started with only
+`--ozone-platform=wayland`, gave the same picture as Zen:
+
+| Field in Chromium | `cap` | Flags |
+|---|---|---|
+| address bar | `1072` | url |
+| ordinary text field | `72` / `80072` | none |
+| password field | `100000007a` | **password**, sensitive |
+
+(The earlier "no focused input field" in a Chromium web-app window simply had
+no field clicked.)
+
+Both browsers are covered by the fcitx5 route. Still to survey: Telegram (Qt),
+the polkit prompt.
 
 State at the end of the day: stage 1 is done, installed and running as
 `password-layout-tty.service`; 14 tests pass. Open: the check by typing, tmux,
