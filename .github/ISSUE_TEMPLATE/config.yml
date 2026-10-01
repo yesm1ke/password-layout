@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Security problem
+    url: https://github.com/yesm1ke/password-layout/security/advisories/new
+    about: Report it privately, not in a public issue (SECURITY.md).
+  - name: Known limitations
+    url: https://github.com/yesm1ke/password-layout/issues?q=is%3Aissue+label%3Alimitation
+    about: Cases that are known not to work, with what was tried.
