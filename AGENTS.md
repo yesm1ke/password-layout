@@ -1,8 +1,7 @@
 # Working on password-layout
 
-For coding agents and new contributors: what you need to start working without
-reading the whole history. Humans start with [README.md](README.md); the rules
-for pull requests are in [CONTRIBUTING.md](CONTRIBUTING.md).
+For coding agents and contributors: the map, the commands and the rules. What
+the project does for users is in [README.md](README.md).
 
 ## What it is
 
@@ -38,12 +37,10 @@ Hyprland and restores the old layout after the last holder leaves.
 | `packaging/arch/` | PKGBUILD (the only place the version is kept), install script, the release public key |
 | `.github/workflows/` | `ci.yml` (every pull request and push to main), `build.yml` (tests, package, smoke test; shared), `release.yml` (`v*` tags: sign, attest, publish) |
 
-Plans, tasks and status live on GitHub, not in the repository: milestones
-and one issue per task (known limitations carry the label `limitation`); a
-larger plan, when there is one, is a pinned issue. The last one, #36, is
-closed and shows how it was done. Background is in the [wiki](https://github.com/yesm1ke/password-layout/wiki): how it works, design
-decisions, measurements, the journal of the first two days. In the
-repository: [CHANGELOG.md](CHANGELOG.md), [SECURITY.md](SECURITY.md).
+Plans and tasks live on GitHub, not in the repository: one issue per task
+(known limitations carry the label `limitation`), milestones, and a pinned
+issue for a larger plan when there is one. Background (how it works, design
+decisions, measurements) is in the [wiki](https://github.com/yesm1ke/password-layout/wiki).
 
 ## Build and test
 
@@ -60,6 +57,11 @@ the Makefile appends `-std=c++20 -Isrc` to them. Run the tests with
 `env -u TERM` as well; CI has no `TERM`. Needs g++ with C++20, make, tmux, and
 fcitx5 development files for the addon. C++20, no third-party libraries:
 keep it that way (the service runs all the time; memory and wakeups matter).
+
+`make install` puts files in place and honours `DESTDIR` and `PREFIX`;
+`make install-user` installs into `~/.local` for one user. The Arch package
+builds from the release tag: `cd packaging/arch && makepkg -si`. `make bench`
+repeats the [measurements](https://github.com/yesm1ke/password-layout/wiki/Resource-use).
 
 ## Checking on a live desktop
 
@@ -83,7 +85,7 @@ Hyprland session, with a non-Latin layout active.
 
 - **The addon never looks at key events.** It watches only focus and
   capability events. SECURITY.md promises this; `tools/check-addon-events`
-  fails the release otherwise.
+  fails CI otherwise.
 - **The service makes no network requests and never writes to a terminal.**
   The sandbox (`PrivateNetwork`, `RestrictAddressFamilies=AF_UNIX`) enforces the
   first.
@@ -103,10 +105,9 @@ Hyprland session, with a non-Latin layout active.
 
 - Work on a branch and open a pull request; main accepts nothing else and
   requires CI (`build / test`, `build / package`, `build / smoke`, `emails`).
-- Merge with "Rebase and merge" only (`gh pr merge --rebase`): merge
-  commits are disabled, and once carried a personal e-mail address that took
-  a history rewrite to remove. CI fails on any address other than the GitHub
-  no-reply ones.
+- Merge with "Rebase and merge" only (`gh pr merge --rebase`); merge commits
+  are disabled. CI fails on any e-mail address other than GitHub's no-reply
+  ones.
 - Every change has an issue; record in the pull request what was done and how
   it was verified, including what was not. User-visible changes also get a
   line in CHANGELOG.md's `unreleased` section.
@@ -119,10 +120,5 @@ Hyprland session, with a non-Latin layout active.
 
 ## Releases
 
-Only the maintainer releases, with two runs of `tools/release X.Y.Z` on main:
-the first opens a pull request that sets the version and dates the CHANGELOG
-section; after it is merged, the second tags that commit, but only if CI
-passed on it. `release.yml` then builds from the tag, signs with the release
-key (a secret of the `release` environment), attests and publishes. A failed
-release tag is never reused; the next patch version is used instead. Tags
-`v*` can be created only by repository admins.
+Only the maintainer releases, with `tools/release X.Y.Z` (how, in its
+header). A failed release tag is never reused; the next patch version is.

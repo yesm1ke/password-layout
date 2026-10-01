@@ -34,7 +34,7 @@ body:
     attributes:
       label: Version
       description: "`pacman -Q password-layout`, or the commit when built from a checkout."
-      placeholder: "password-layout 0.6.2-1"
+      placeholder: "password-layout 0.7.1-1"
   - type: textarea
     id: log
     attributes:
