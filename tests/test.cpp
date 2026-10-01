@@ -11,6 +11,7 @@
 #include <functional>
 #include <optional>
 #include <pty.h>
+#include <stdexcept>
 #include <string>
 #include <sys/stat.h>
 #include <sys/sysmacros.h>
@@ -243,6 +244,29 @@ void stateIgnoresLeaveWithoutEnter() {
     CHECK(compositor.switches.empty());
 }
 
+void holderNamesAreOneSafeLine() {
+    CHECK(isValidHolder("tty"));
+    CHECK(isValidHolder("im"));
+    CHECK(isValidHolder("my-source-2"));
+    CHECK(!isValidHolder(""));
+    CHECK(!isValidHolder("tty\nim"));
+    CHECK(!isValidHolder("Tty"));
+    CHECK(!isValidHolder("../x"));
+    CHECK(!isValidHolder(std::string(33, 'a')));
+
+    State state(temporaryDirectory());
+    FakeCompositor compositor(1);
+    bool rejected = false;
+    try {
+        state.enter("tty\n7", compositor);
+    } catch (const std::invalid_argument &) {
+        rejected = true;
+    }
+    CHECK(rejected);
+    CHECK(compositor.switches.empty());
+    CHECK(state.holders().empty());
+}
+
 void silentReadIsAPromptOwnedByUs() {
     PtyChild child({"bash", "-c", "read -s -p pw: x"});
     auto devices = passwordPtys(getuid());
@@ -403,6 +427,7 @@ int main() {
         {"state leaves Latin alone", stateLeavesLatinAlone},
         {"state restores only after the last holder", stateRestoresOnlyAfterLastHolder},
         {"state ignores leave without enter", stateIgnoresLeaveWithoutEnter},
+        {"holder names are one safe line", holderNamesAreOneSafeLine},
         {"state uses the Latin layout wherever it is", stateUsesTheLatinLayoutWhereverItIs},
         {"state does nothing without a Latin layout", stateDoesNothingWithoutALatinLayout},
         {"state keeps a Latin layout that is not the first", stateKeepsALatinLayoutThatIsNotTheFirst},

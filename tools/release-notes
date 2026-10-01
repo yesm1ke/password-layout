@@ -2,7 +2,7 @@
 # Prints the CHANGELOG.md section of one version, without its heading: the body
 # of the GitHub release.
 #
-# Usage: tools/release-notes 0.5.1
+# Usage: tools/release-notes 0.6.0
 
 set -euo pipefail
 cd "$(dirname "$0")/.."

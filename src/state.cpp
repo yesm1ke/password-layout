@@ -38,6 +38,24 @@ private:
 
 } // namespace
 
+bool isValidHolder(std::string_view holder) {
+    return !holder.empty() && holder.size() <= 32 &&
+           std::ranges::all_of(holder, [](char c) {
+               return (c >= 'a' && c <= 'z') || (c >= '0' && c <= '9') || c == '-';
+           });
+}
+
+namespace {
+
+void requireValidHolder(const std::string &holder) {
+    if (!isValidHolder(holder)) {
+        throw std::invalid_argument("holder must be lowercase letters, digits and '-', "
+                                    "at most 32 characters");
+    }
+}
+
+} // namespace
+
 State::State(std::string directory) : directory_(std::move(directory)) {
     if (directory_.empty()) {
         const char *runtime = std::getenv("XDG_RUNTIME_DIR");
@@ -97,6 +115,7 @@ void State::save(const Contents &contents) const {
 }
 
 void State::enter(const std::string &holder, Compositor &compositor) {
+    requireValidHolder(holder);
     Lock lock(directory_);
     Contents contents = load();
     if (contents.holders.empty()) {
@@ -128,6 +147,7 @@ void State::enter(const std::string &holder, Compositor &compositor) {
 }
 
 void State::leave(const std::string &holder, Compositor &compositor) {
+    requireValidHolder(holder);
     Lock lock(directory_);
     Contents contents = load();
     auto found = std::ranges::find(contents.holders, holder);

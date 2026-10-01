@@ -3,7 +3,7 @@
 What changed for someone who installs the package. The day-to-day record is in
 [STATUS.md](STATUS.md).
 
-## 0.5.1 — unreleased
+## 0.6.0 — unreleased
 
 - Releases are built, tested and published by GitHub Actions from the tag,
   instead of on the developer's machine.
@@ -15,6 +15,12 @@ What changed for someone who installs the package. The day-to-day record is in
 - The PKGBUILD runs the test suite (`check()`).
 - `SECURITY.md`: what the service and the addon can see, and how to report a
   problem.
+- The terminal service runs sandboxed: read-only file system, no network, no
+  privileged system calls (`systemd-analyze --user security` rates it 2.9
+  instead of 9.4). The part that needs user namespaces is a separate drop-in;
+  see README, "Troubleshooting", if your kernel has them turned off.
+- `enter` and `leave` accept only holder names of lowercase letters, digits and
+  `-`.
 
 ## 0.5.0 — 2026-09-30
 

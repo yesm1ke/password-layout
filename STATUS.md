@@ -14,13 +14,12 @@ Updated with every change. The stages are described in [PLAN.md](PLAN.md).
 
 Plan agreed on 2026-10-01: security, ease of use, releases built by CI.
 
-1. Release pipeline (in progress on the `release-pipeline` branch, see the
-   journal): the release key exists; after the merge into main, 0.5.1 goes out
-   through `tools/release` as the first release built, signed and attested by
-   GitHub Actions.
-2. Service and code hardening → 0.6.0: systemd sandboxing of the user unit
-   (checked with `systemd-analyze --user security` and live), holder names
-   limited to `[a-z0-9-]`, external commands by absolute path.
+1. Release pipeline and hardening are done on the `release-pipeline` branch
+   and go out together as 0.6.0 (instead of a separate 0.5.1), through
+   `tools/release` after the merge into main: the first release built, signed
+   and attested by GitHub Actions. Before the merge: tag ruleset and private
+   vulnerability reporting on GitHub.
+2. ~~Service and code hardening~~ — done, see the journal.
 3. `password-layout doctor` → 0.7.0: one command that checks Hyprland, the
    Latin layout, the service, fcitx5 and the addon, fcitx5-qt's version and
    sudo's `use_pty`, and explains what is wrong.
@@ -451,7 +450,7 @@ GPG signature and a GitHub build attestation.
   section with both ways of checking the package.
 - Locally: 24 tests pass with `-O2 -Werror` (addon included) and with ASan and
   UBSan. The workflow itself has not run yet; Docker here needs root, so the
-  container steps are first exercised by the 0.5.1 tag.
+  container steps are first exercised by the first release tag (0.6.0).
 - Not done, on purpose: pinning `fcitx5<5.2` in the PKGBUILD. An ABI break in
   fcitx5 comes with a new soname, which keeps an old addon from loading rather
   than crashing fcitx5, while a version pin would block fcitx5 updates for
@@ -466,3 +465,39 @@ secrets, the public key in `packaging/arch/password-layout.asc`. Checked:
 `gpg --recv-keys` of the full fingerprint from keyserver.ubuntu.com imports it
 (a lookup by the short id answers "Not Found"; the README uses the full one).
 The work stays on the `release-pipeline` branch until it is ready for main.
+
+#### Hardening (stage 2 of the plan)
+
+- **Sandbox of the user unit**, tried live as drop-ins over the installed unit
+  with a Russian layout active, opening foot windows with `read -s`, with
+  `read -s` inside tmux and with a real `sudo -v`; every case switched to Latin
+  and back. `systemd-analyze --user security`: 9.4 UNSAFE before, 2.9 OK after.
+  - In the unit, working on any kernel: `NoNewPrivileges`,
+    `RestrictAddressFamilies=AF_UNIX`, `RestrictNamespaces`, `RestrictRealtime`,
+    `RestrictSUIDSGID`, `LockPersonality`, `MemoryDenyWriteExecute`,
+    `SystemCallArchitectures=native`, `SystemCallFilter=@system-service` minus
+    `@privileged @resources`, `KeyringMode=private`, `UMask=0077` (5.5 alone).
+  - In `password-layout-tty.service.d/sandbox-namespaces.conf`: the options
+    that a user manager can only apply inside a user namespace —
+    `PrivateUsers=self`, `ProtectSystem=strict` with `ReadWritePaths=%t`,
+    `ProtectHome=read-only`, `PrivateNetwork`, `ProtectProc=invisible`,
+    `ProcSubset=pid`, `ProtectKernel*`, `ProtectControlGroups`, `ProtectClock`,
+    `ProtectHostname`. systemd.exec(5) says they need unprivileged user
+    namespaces; without them (linux-hardened) the service would not start, so
+    this part can be masked alone by an empty file of the same name in
+    `~/.config` (README, Troubleshooting).
+  - Not possible or not wanted: `CapabilityBoundingSet=` (a user manager may
+    not set it: the service failed with 218/CAPABILITIES), `PrivateTmp` (tmux
+    sockets live in /tmp), `PrivateDevices` (terminals are in /dev/pts).
+- **tmux client by path**: the client is run from `/proc/<server>/exe` — the
+  running server's own binary, so no PATH lookup and no protocol mismatch after
+  a tmux upgrade. Found live: inside a user namespace the kernel denies access
+  to another process's exe link (exec, readlink and `access` all fail), and
+  with the namespace drop-in a prompt in tmux was not recognised. The client
+  is now that binary when `access(X_OK)` allows it and `tmux` from PATH
+  otherwise; checked live with and without the namespace part.
+- **Holder names**: `State::enter` and `leave` reject names that are not
+  `[a-z0-9-]{1,32}`, so a name with a newline cannot add lines to the state
+  file. Test added (25 tests).
+- Not done: the `fcitx5<5.2` pin (see the release pipeline entry).
+- Releases: stage 1 and stage 2 go out together as 0.6.0; CHANGELOG renamed.

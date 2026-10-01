@@ -148,6 +148,11 @@ Other targets: `make test`, and `make bench` for the measurements in
 - Every actual switch is logged, one line each way:
   `journalctl --user -u password-layout-tty` for terminals, the fcitx5 log for
   graphical applications (`journalctl --user -u omarchy-fcitx5` on Omarchy).
+- The service does not start (`systemctl --user status password-layout-tty`
+  shows it restarting): part of its sandboxing needs unprivileged user
+  namespaces, which some kernels (`linux-hardened`) turn off. Turn that part
+  off with an empty drop-in of the same name, then restart the service:
+  `mkdir -p ~/.config/systemd/user/password-layout-tty.service.d && touch ~/.config/systemd/user/password-layout-tty.service.d/sandbox-namespaces.conf`.
 - What fcitx5 knows about the focused field: `tools/fcitx-watch` from a
   checkout. For the addon's own debug output:
   `busctl --user call org.fcitx.Fcitx5 /controller org.fcitx.Fcitx.Controller1 SetLogRule s passwordlayout=5`.

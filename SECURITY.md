@@ -24,7 +24,13 @@ just printed something:
 - the list of panes and clients from tmux, when a prompt is inside tmux.
 
 It never writes to a terminal, opens no network connections and runs as you,
-with no extra privileges.
+with no extra privileges. systemd sandboxes it on top of that: the file system
+is read-only apart from its own runtime directory and there is no network at
+all (these two need user namespaces, see "Troubleshooting" in the README), only
+Unix sockets can be opened, and privileged system calls are refused
+(`systemd/password-layout-tty.service.in`,
+`systemd/sandbox-namespaces.conf`). Check it with
+`systemd-analyze --user security password-layout-tty`.
 
 **Both** talk to Hyprland over its socket only to read the keyboard layout and
 the focused window, and to switch the layout.

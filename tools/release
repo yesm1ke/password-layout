@@ -5,9 +5,9 @@
 # tests again, signs and publishes. CI runs only for tags, so everything it
 # checks is checked here first: a failed tag cannot be reused.
 #
-# Usage: tools/release 0.5.1
+# Usage: tools/release 0.6.0
 #
-# Before running: CHANGELOG.md has a "## 0.5.1 — unreleased" section, the work
+# Before running: CHANGELOG.md has a "## 0.6.0 — unreleased" section, the work
 # is committed, and main is pushed. The tag is signed if git has a signing key.
 
 set -euo pipefail
