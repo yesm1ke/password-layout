@@ -7,7 +7,8 @@
 #                              package, but signs and publishes nothing.
 #   tools/release 0.6.1        the release: tests, sets the version if no
 #                              candidate did, dates the CHANGELOG section,
-#                              commits, tags v0.6.1 and pushes; CI publishes.
+#                              points the README's pacman URL at it, commits,
+#                              tags v0.6.1 and pushes; CI publishes.
 #
 # A failed release tag cannot be reused, so put out a candidate first and tag
 # the release once its CI run is green.
@@ -70,10 +71,14 @@ if [[ $(sed -n 's/^pkgver=//p' packaging/arch/PKGBUILD) != "$version" ]]; then
   sed -i -e "s/^pkgver=.*/pkgver=$version/" -e "s/^pkgrel=.*/pkgrel=1/" packaging/arch/PKGBUILD
 fi
 (cd packaging/arch && makepkg --printsrcinfo > .SRCINFO)
-$candidate || sed -i "s/^## $version — unreleased$/## $version — $(date +%F)/" CHANGELOG.md
+if ! $candidate; then
+  sed -i "s/^## $version — unreleased$/## $version — $(date +%F)/" CHANGELOG.md
+  # The pacman URL in the README names the version (see there why).
+  sed -i -E "s|releases/download/v[0-9.]+/password-layout-[0-9.]+-[0-9]+-|releases/download/v$version/password-layout-$version-1-|" README.md
+fi
 tools/check-version "$version"
 
-git add Makefile packaging/arch/PKGBUILD packaging/arch/.SRCINFO CHANGELOG.md
+git add Makefile packaging/arch/PKGBUILD packaging/arch/.SRCINFO CHANGELOG.md README.md
 if ! git diff --cached --quiet; then
   if $candidate; then
     git commit --quiet -m "Prepare $version"

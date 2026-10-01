@@ -97,8 +97,13 @@ signature on every install, so the URL can then be given to it directly:
 ```
 sudo pacman-key --recv-keys 7C5242797972ED2923B944029AC95674831AE330
 sudo pacman-key --lsign-key 7C5242797972ED2923B944029AC95674831AE330
-sudo pacman -U https://github.com/yesm1ke/password-layout/releases/latest/download/password-layout-x86_64.pkg.tar.zst
+sudo pacman -U https://github.com/yesm1ke/password-layout/releases/download/v0.6.2/password-layout-0.6.2-1-x86_64.pkg.tar.zst
 ```
+
+Give pacman the URL with the version in it, as above, never the
+`latest/download` one: pacman keeps downloads in its cache by file name, and
+for a name it already has it installs the cached file instead of fetching the
+new one, so an update would reinstall the old version.
 
 The key is also in the repository, `packaging/arch/password-layout.asc`; it
 signs releases and nothing else. `SHA256SUMS` and its signature
