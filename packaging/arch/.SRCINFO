@@ -7,6 +7,7 @@ pkgbase = password-layout
 	arch = x86_64
 	arch = aarch64
 	license = MIT
+	checkdepends = tmux
 	makedepends = git
 	depends = gcc-libs
 	depends = glibc
