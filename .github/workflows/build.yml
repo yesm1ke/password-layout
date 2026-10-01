@@ -76,6 +76,8 @@ jobs:
         env:
           FROM_TAG: ${{ inputs.from-tag }}
         run: |
+          # actions/checkout trusts the workspace only for its own run.
+          git config --global --add safe.directory "$PWD"
           root=$PWD
           commit=$(git rev-parse HEAD)
           # makepkg clones this checkout by its refs; a pull request's merge
