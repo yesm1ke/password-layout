@@ -136,7 +136,9 @@ std::string Hyprland::request(std::string_view command) const {
         if (connect(fd, reinterpret_cast<sockaddr *>(&address), sizeof(address)) < 0) {
             fail("connect to Hyprland");
         }
-        if (write(fd, command.data(), command.size()) < 0) {
+        // MSG_NOSIGNAL: a compositor that closes the socket first must not
+        // kill the service with SIGPIPE.
+        if (send(fd, command.data(), command.size(), MSG_NOSIGNAL) < 0) {
             fail("write to Hyprland");
         }
         char buffer[8192];
