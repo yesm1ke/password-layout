@@ -603,3 +603,12 @@ and a local file, but never for updates through pacman's URL form. The README's
 pacman command now names the version; `tools/release` rewrites it for each
 release and `tools/check-version` fails a release whose README names another
 version.
+
+Installed 0.6.2 on the development machine with the versioned URL (pacman
+checked the signature): the addon description says `core:5.1.0`, `doctor`
+reports Hyprland, the service and the addon ok (warn for fcitx5-qt 5.1.15, the
+sudo note), the service runs sandboxed (2.9, no restarts). Live with Russian
+active: `tools/fake-field --password` made the holder `im` and the keymap
+English (US), Russian came back after focus left; a plain field holds nothing.
+The fcitx5 log has `Latin for im (layout 0, was 1)` and `layout 1 restored
+(im left)`.
