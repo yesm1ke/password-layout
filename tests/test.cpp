@@ -369,9 +369,13 @@ void doctorHelpersReadVersionsAndMaps() {
     CHECK(!sudoVersion("sudo: command not found"));
     std::string maps = "7f00-7f01 r-xp 00000000 00:1f 123  /usr/lib/fcitx5/libpasswordlayout.so\n"
                        "7f02-7f03 r--p 00000000 00:1f 124  /usr/lib/libnotpasswordlayout.so.1\n";
-    CHECK(mapsLibrary(maps, "libpasswordlayout.so"));
-    CHECK(!mapsLibrary(maps, "libFcitx5Core.so"));
-    CHECK(!mapsLibrary("7f02-7f03 r--p 0 00:1f 124  /x/libpasswordlayout.so.old\n",
+    CHECK(mapsLibrary(maps, "libpasswordlayout.so") == Mapped::Yes);
+    CHECK(mapsLibrary(maps, "libFcitx5Core.so") == Mapped::No);
+    CHECK(mapsLibrary("7f00-7f01 r-xp 0 00:1f 123  /usr/lib/fcitx5/libpasswordlayout.so (deleted)\n",
+                      "libpasswordlayout.so") == Mapped::Replaced);
+    CHECK(exeReplaced("/usr/bin/password-layout (deleted)"));
+    CHECK(!exeReplaced("/usr/bin/password-layout"));
+    CHECK(Mapped::No == mapsLibrary("7f02-7f03 r--p 0 00:1f 124  /x/libpasswordlayout.so.old\n",
                        "libpasswordlayout.so"));
     CHECK((addonRequiresCore("[Addon]\nName=x\n\n[Addon/Dependencies]\n0=core:5.1.23\n") ==
            std::optional<std::string>("5.1.23")));

@@ -85,16 +85,13 @@ build/user/$(UNIT): systemd/$(UNIT).in
 	@mkdir -p $(dir $@)
 	sed 's|@BINDIR@|$(USER_BINDIR)|' $< > $@
 
-# Installs files only. The service is enabled for every user by the link in
-# graphical-session.target.wants (the way gnupg ships its sockets) and starts
-# with the next graphical session; fcitx5 picks the addon up on its next start.
-# The Arch package's install script starts both at once for logged-in users.
+# Installs files only and enables nothing: each user turns the service on with
+# systemctl --user enable --now password-layout-tty, and fcitx5 picks the addon
+# up on its next start.
 install: all build/system/$(UNIT) $(if $(ADDON),build/system/passwordlayout.conf)
 	install -Dm755 build/password-layout $(DESTDIR)$(BINDIR)/password-layout
 	install -Dm644 build/system/$(UNIT) $(DESTDIR)$(UNIT_DIR)/$(UNIT)
 	install -Dm644 systemd/sandbox-namespaces.conf $(DESTDIR)$(UNIT_DIR)/$(DROPIN)
-	install -d $(DESTDIR)$(UNIT_DIR)/graphical-session.target.wants
-	ln -sf ../$(UNIT) $(DESTDIR)$(UNIT_DIR)/graphical-session.target.wants/$(UNIT)
 	install -Dm644 LICENSE $(DESTDIR)$(LICENSE_DIR)/LICENSE
 ifneq ($(ADDON),)
 	install -Dm755 $(ADDON) $(DESTDIR)$(ADDON_LIBDIR)/libpasswordlayout.so
@@ -105,7 +102,6 @@ uninstall:
 	rm -f $(DESTDIR)$(BINDIR)/password-layout $(DESTDIR)$(UNIT_DIR)/$(UNIT)
 	rm -f $(DESTDIR)$(UNIT_DIR)/$(DROPIN)
 	-rmdir $(DESTDIR)$(UNIT_DIR)/$(UNIT).d
-	rm -f $(DESTDIR)$(UNIT_DIR)/graphical-session.target.wants/$(UNIT)
 	rm -f $(DESTDIR)$(ADDON_LIBDIR)/libpasswordlayout.so $(DESTDIR)$(ADDON_CONFDIR)/passwordlayout.conf
 	rm -rf $(DESTDIR)$(LICENSE_DIR)
 

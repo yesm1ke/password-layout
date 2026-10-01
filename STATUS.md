@@ -682,3 +682,14 @@ test; without `SO_RCVTIMEO` the silent-compositor test hangs. Live: `doctor`
 and `status` read the layouts as before. Not checked live: an actual fcitx5
 crash and restart, a Hyprland restart.
 
+#### #25: the package enables nothing
+
+Decided by the maintainer: the Arch way. `make install` no longer ships the
+`graphical-session.target.wants` link; the install script only prints what to
+run (and, on an upgrade from before 0.7.0, that the service must now be
+enabled once). `doctor`: a running service whose binary was replaced, an
+addon mapped from a replaced file, a running but not enabled service. The
+development machine shows `UnitFileState=enabled` through the old vendor link,
+which goes away with the 0.7.0 package. #26 decided: 0.7.0 keeps GPG and
+attestation; AUR-first is deferred to #40 (AUR registration is closed).
+
