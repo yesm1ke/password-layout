@@ -145,10 +145,13 @@ a prompt away is the mode of its pseudo-terminal: **echo is off while line input
 is still on**. Shells and full-screen programs turn both off; ordinary line input
 keeps both on. macOS Ghostty uses the same heuristic for its secure input.
 
-The service does not poll. It sleeps until the kernel reports, through inotify,
-that some terminal printed something, and then checks the mode of only the
-terminals that printed. A prompt nearly always prints its text, so this is
-enough; the one exception is [#6](https://github.com/yesm1ke/password-layout/issues/6).
+While terminals are quiet the service sleeps: it wakes when the kernel
+reports, through inotify, that some terminal printed something, and checks
+the mode of only the terminals that printed. While a terminal keeps printing,
+or a prompt is up, it looks every 200 ms instead (focus can move and a prompt
+can end without any output); see [BENCHMARKS.md](BENCHMARKS.md) for what that
+costs. A prompt nearly always prints its text, so waking on output is enough;
+the one exception is [#6](https://github.com/yesm1ke/password-layout/issues/6).
 
 The layout is switched only if the prompting terminal belongs to the focused
 window, which is decided by walking the process tree from the terminal up to the

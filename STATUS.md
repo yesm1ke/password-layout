@@ -693,3 +693,20 @@ development machine shows `UnitFileState=enabled` through the old vendor link,
 which goes away with the 0.7.0 package. #26 decided: 0.7.0 keeps GPG and
 attestation; AUR-first is deferred to #40 (AUR registration is closed).
 
+#### #28: claims checked
+
+- README no longer says the service "does not poll": it sleeps while
+  terminals are quiet and looks every 200 ms while one prints or a prompt is
+  up.
+- SECURITY.md calls `tools/check-addon-events` a guard against accidental
+  change, not a proof, and points to the addon's source.
+- `ssh`: checked by hand by the maintainer on 2026-10-01 with Russian active:
+  `ssh -o PubkeyAuthentication=no …` to a LAN host; the journal shows `Latin
+  for tty (layout 0, was 1)` at the password prompt and `layout 1 restored`
+  after it. README keeps listing `ssh`.
+- Found during that check: Ghostty runs all its windows and tabs in one
+  process, so a prompt in a background Ghostty tab counts as "in the focused
+  window" (the ownership walk ends at the same pid). Seen live: an `ssh`
+  prompt in another tab held Latin while a different Ghostty tab had focus.
+  Filed as a separate issue.
+
