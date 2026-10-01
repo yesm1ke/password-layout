@@ -35,7 +35,7 @@ Hyprland and restores the old layout after the last holder leaves.
 | `bench/`, `BENCHMARKS.md` | resource measurements |
 | `tools/` | `release`, `check-version`, `release-notes`, `check-addon-events` (release/CI); `fake-field`, `fcitx-watch` (live checks); `setup-release-key` (maintainer only) |
 | `packaging/arch/` | PKGBUILD, `.SRCINFO`, install script, the release public key |
-| `.github/workflows/release.yml` | the only CI: runs on `v*` tags |
+| `.github/workflows/` | `ci.yml` (every pull request and push to main), `build.yml` (tests, package, smoke test; shared), `release.yml` (`v*` tags: sign, attest, publish) |
 
 Documents: [PLAN.md](PLAN.md) (stages and decisions), [STATUS.md](STATUS.md)
 (next steps and a dated journal of everything done and verified),
@@ -98,7 +98,12 @@ Hyprland session, with a non-Latin layout active.
 
 ## Workflow
 
-- Work on a branch and open a pull request; main stays clean.
+- Work on a branch and open a pull request; main accepts nothing else and
+  requires CI (`build / test`, `build / package`, `build / smoke`, `emails`).
+- Merge with "Rebase and merge" only (`gh pr merge --rebase`): merge
+  commits are disabled, and once carried a personal e-mail address that took
+  a history rewrite to remove. CI fails on any address other than the GitHub
+  no-reply ones.
 - Every change gets an entry in STATUS.md's journal (what was done and how it
   was verified, including what was not verified). User-visible changes also
   get a line in CHANGELOG.md's `unreleased` section.
@@ -111,10 +116,10 @@ Hyprland session, with a non-Latin layout active.
 
 ## Releases
 
-Only the maintainer releases. `tools/release X.Y.Z --rc` pushes a
-`vX.Y.Z-rcN` tag: CI runs every check, builds and installs the package, but
-publishes nothing. Once it is green, `tools/release X.Y.Z` tags the release,
-and CI signs it with the release key (a secret of the `release` environment),
-attests it and publishes it. A failed release tag is never reused; the next
-patch version is used instead. Tags `v*` can be created only by repository
-admins.
+Only the maintainer releases, with two runs of `tools/release X.Y.Z` on main:
+the first opens a pull request that sets the version and dates the CHANGELOG
+section; after it is merged, the second tags that commit, but only if CI
+passed on it. `release.yml` then builds from the tag, signs with the release
+key (a secret of the `release` environment), attests and publishes. A failed
+release tag is never reused; the next patch version is used instead. Tags
+`v*` can be created only by repository admins.

@@ -650,3 +650,15 @@ dependency, words GitHub forbids in issue form labels), the branch and STATUS
 workflow, and releases. CLAUDE.md imports it (`@AGENTS.md`) so there is one
 text; README and CONTRIBUTING link to it.
 
+#### CI on pull requests (#19)
+
+CI runs on every pull request and push to main (`ci.yml`) instead of tags
+only: `build.yml` (tests plain and with sanitizers, the addon guard, the
+package built from the commit under test via a `git+file://` source, a smoke
+install) is shared with `release.yml`, which builds from the tag and signs,
+attests and publishes. Release candidates are gone: `tools/release X.Y.Z`
+opens a release pull request, and after the merge tags the commit only if CI
+passed on it. `ci.yml` also fails on any commit e-mail other than the GitHub
+no-reply ones, without printing the address (#18). Checked locally: the
+`git+file://…#commit=` source with `makepkg -o`; the rest on this pull request.
+

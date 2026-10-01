@@ -3,8 +3,7 @@
 # the Makefile, the PKGBUILD, its .SRCINFO (version and tag) and CHANGELOG.md;
 # and README.md must name the release key.
 #
-# Usage: tools/check-version 0.6.0   (a tag name such as v0.6.0 or v0.6.0-rc1 is
-# fine: the "v" and a pre-release suffix are ignored)
+# Usage: tools/check-version 0.6.0   (a tag name such as v0.6.0 is fine)
 
 set -euo pipefail
 cd "$(dirname "$0")/.."

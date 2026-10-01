@@ -1,0 +1,43 @@
+# Every pull request and every push to main: the tests, the package built from
+# the commit under test, and the commit e-mail check. main requires these.
+
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions: {}
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    uses: ./.github/workflows/build.yml
+    permissions:
+      contents: read
+
+  # Only the GitHub no-reply addresses may appear in the history: a personal
+  # address once got into merge commits and needed a history rewrite.
+  emails:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          fetch-depth: 0
+      - name: Commit e-mails
+        shell: bash
+        run: |
+          bad=$(git log --format='%ae%n%ce' HEAD | sort -u |
+            grep -vxE '28575713\+yesm1ke@users\.noreply\.github\.com|noreply@github\.com' || true)
+          # The addresses themselves are not printed: CI logs are public.
+          if [[ -n $bad ]]; then
+            echo "::error::$(wc -l <<<"$bad") address(es) other than the GitHub no-reply ones in the history; check with git log --format='%ae %ce'"
+            exit 1
+          fi
