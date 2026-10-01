@@ -618,3 +618,16 @@ README, PLAN and this file link to the issues (journal links included).
 Community files: CONTRIBUTING.md, CODE_OF_CONDUCT.md (Contributor Covenant
 2.1), issue forms that ask for `password-layout doctor` output, a pull request
 template, and repository topics.
+
+Issue templates, fixed: the bug form never showed. GitHub rejected the whole
+form ("body[1]: Label contains a forbidden word", the same for body[3]): field
+labels may not contain words such as "password", against credential phishing.
+The labels are "Doctor output" and "Version" now, the command names in the
+descriptions; the template page reports `"errors":[]`. The community profile
+and GraphQL's `issueTemplates` count Markdown templates only, so a second
+template, `request.md` (a program or case to support, asking for
+`tools/fcitx-watch` output), was added; GraphQL lists it and the Community
+Standards page ticks "Issue templates". The REST community profile still
+reports `issue_template: null`; it seems to look only for a single legacy
+ISSUE_TEMPLATE.md file.
+
