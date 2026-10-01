@@ -563,3 +563,30 @@ notes ignore the suffix. `tools/release X.Y.Z --rc` sets the version, commits
 "Prepare X.Y.Z" and pushes the next free `-rcN`; `tools/release X.Y.Z` then
 dates the CHANGELOG and tags the release. v0.6.0 stays as a tag that was never
 released; the next version is 0.6.1.
+
+#### 0.6.1 released by CI; the addon did not load
+
+`tools/release 0.6.1 --rc` → v0.6.1-rc1: test, build and smoke green, release
+skipped. The build log confirmed the `-debug` package was made and dropped.
+`tools/release 0.6.1` → all four jobs green. Checked the release as a user
+would: `sha256sum -c SHA256SUMS` OK; the three GPG signatures VALIDSIG by
+`7C52…E330`; `gh attestation verify` OK, built by `release.yml` at
+`refs/tags/v0.6.1`, commit `d20e579` (the tag's); the `latest/download` link
+serves the package. The ruleset let the admin create both tags (logged as a
+bypass).
+
+Installed on the development machine the README way: `pacman-key --recv-keys`
+and `--lsign-key` (trust `full`), then `pacman -U <latest URL>`, which checked
+the signature. The service came back sandboxed (2.9, the namespace drop-in
+loaded, no restarts). But `doctor` warned: fcitx5 running without the addon.
+Cause: `passwordlayout.conf` carried `0=core:@FCITX_VERSION@`, the exact fcitx5
+of the build. CI's container had fcitx5 5.1.23 (just in the repositories), the
+machine 5.1.22, and fcitx5 skips an addon that asks for a newer core without a
+line in its log. Every package built on the developer's own machine had hidden
+this.
+
+Fix (0.6.2): the addon asks for `<major>.<minor>.0` of the fcitx5 it was built
+against (5.1.0); within a series the ABI holds, a break changes the soname. The
+smoke job checks the installed description for that form. `doctor` compares
+the core version the description asks for with `fcitx5 --version` and says
+"update the system, or install a package built for this fcitx5". Test added.
