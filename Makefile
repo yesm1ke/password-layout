@@ -67,7 +67,7 @@ build/tests: tests/test.cpp $(LIB_SOURCES) $(HEADERS)
 test: build/tests
 	./build/tests
 
-# Figures and method are in BENCHMARKS.md. The loop benchmark and the service
+# Figures and method are in the wiki (https://github.com/yesm1ke/password-layout/wiki/Resource-use). The loop benchmark and the service
 # measurement run side by side so both see the same terminal load.
 bench: build/bench-loop build/bench-pass
 	./build/bench-pass

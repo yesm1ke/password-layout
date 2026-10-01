@@ -1,6 +1,6 @@
 // CPU cost of one wakeup of the plain polling loop: sleep 200 ms, then scan
 // every terminal. Run it while the installed service is under the same load and
-// compare against the service's own figures (see BENCHMARKS.md).
+// compare against the service's own figures (see https://github.com/yesm1ke/password-layout/wiki/Resource-use).
 
 #include "tty.h"
 

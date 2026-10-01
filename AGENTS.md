@@ -32,15 +32,16 @@ Hyprland and restores the old layout after the last holder leaves.
 | `src/fcitx/` | the fcitx5 addon (`libpasswordlayout.so`) and its description template |
 | `systemd/` | the user unit and its sandbox drop-in |
 | `tests/test.cpp` | all tests, one binary, no framework |
-| `bench/`, `BENCHMARKS.md` | resource measurements |
+| `bench/` | resource measurements (`make bench`; results in the [wiki](https://github.com/yesm1ke/password-layout/wiki/Resource-use)) |
 | `tools/` | `release`, `check-version`, `release-notes`, `check-addon-events` (release/CI); `fake-field`, `fcitx-watch` (live checks); `setup-release-key` (maintainer only) |
 | `packaging/arch/` | PKGBUILD (the only place the version is kept), install script, the release public key |
 | `.github/workflows/` | `ci.yml` (every pull request and push to main), `build.yml` (tests, package, smoke test; shared), `release.yml` (`v*` tags: sign, attest, publish) |
 
-Documents: [PLAN.md](PLAN.md) (stages and decisions), [STATUS.md](STATUS.md)
-(next steps and a dated journal of everything done and verified),
-[CHANGELOG.md](CHANGELOG.md), [SECURITY.md](SECURITY.md). Known limitations and
-deferred work are GitHub issues (label `limitation`); there is no backlog file.
+Plans, tasks and status live on GitHub, not in the repository: the pinned
+plan issue, milestones, and one issue per task (known limitations carry the
+label `limitation`). Background is in the [wiki](https://github.com/yesm1ke/password-layout/wiki): how it works, design
+decisions, measurements, the journal of the first two days. In the
+repository: [CHANGELOG.md](CHANGELOG.md), [SECURITY.md](SECURITY.md).
 
 ## Build and test
 
@@ -104,9 +105,9 @@ Hyprland session, with a non-Latin layout active.
   commits are disabled, and once carried a personal e-mail address that took
   a history rewrite to remove. CI fails on any address other than the GitHub
   no-reply ones.
-- Every change gets an entry in STATUS.md's journal (what was done and how it
-  was verified, including what was not verified). User-visible changes also
-  get a line in CHANGELOG.md's `unreleased` section.
+- Every change has an issue; record in the pull request what was done and how
+  it was verified, including what was not. User-visible changes also get a
+  line in CHANGELOG.md's `unreleased` section.
 - Everything in the repository is in English.
 - Stage files by explicit path, never `git add -A`: release packages
   (`*.pkg.tar.zst`) get downloaded into the checkout and must not be
