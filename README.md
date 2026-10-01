@@ -189,6 +189,11 @@ talks to Hyprland, `src/tmux.*` asks tmux about panes and clients,
 
 ## Limitations
 
+- **Ghostty tabs and windows**: Ghostty, as Omarchy starts it, runs all its
+  windows and tabs in one process, so a prompt left waiting in a background
+  Ghostty tab or window counts as being in the focused one and holds Latin
+  while any Ghostty window has focus. Separate terminal processes (foot, for
+  instance) are not affected. See [#43](https://github.com/yesm1ke/password-layout/issues/43).
 - **Terminal multiplexers other than tmux** (zellij, screen): a prompt inside
   them is not recognised, because their server is not a child of the terminal
   window. tmux is handled: a prompt in the visible pane of a session shown in
