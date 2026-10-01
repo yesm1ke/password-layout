@@ -1,9 +1,11 @@
 #include "activity.h"
 #include "compositor.h"
 #include "doctor.h"
+#include "fcitx/worker.h"
 #include "state.h"
 #include "tmux.h"
 #include "tty.h"
+#include "watch.h"
 
 #include <chrono>
 #include <csignal>
@@ -12,6 +14,7 @@
 #include <filesystem>
 #include <fstream>
 #include <functional>
+#include <mutex>
 #include <optional>
 #include <pty.h>
 #include <stdexcept>
@@ -51,7 +54,8 @@ struct FakeCompositor : Compositor {
         index = to;
         switches.push_back(to);
     }
-    pid_t focusedPid() override { return 0; }
+    pid_t focused = 0;
+    pid_t focusedPid() override { return focused; }
 };
 
 std::string temporaryDirectory() {
@@ -321,6 +325,58 @@ void silentCompositorTimesOut() {
                            : setenv("HYPRLAND_INSTANCE_SIGNATURE", savedSignature.c_str(), 1);
 }
 
+// What a Worker applied, in order, and how long each apply takes.
+struct Applied {
+    std::mutex mutex;
+    std::vector<bool> calls;
+    std::chrono::milliseconds delay{0};
+    void operator()(bool latin) {
+        std::this_thread::sleep_for(delay);
+        std::lock_guard lock(mutex);
+        calls.push_back(latin);
+    }
+    std::vector<bool> taken() {
+        std::lock_guard lock(mutex);
+        return calls;
+    }
+    void waitFor(size_t count) {
+        for (Deadline deadline(3000); taken().size() < count && !deadline.passed();) {
+            std::this_thread::sleep_for(std::chrono::milliseconds(5));
+        }
+    }
+};
+
+void workerGivesBackFirstAndLast() {
+    Applied applied;
+    {
+        Worker worker([&](bool latin) { applied(latin); });
+        worker.want(true);
+        applied.waitFor(2);
+        CHECK((applied.taken() == std::vector<bool>{false, true}));
+    }
+    // Stopping gives the layout back.
+    CHECK((applied.taken() == std::vector<bool>{false, true, false}));
+}
+
+void workerAppliesOnlyTheLatestWish() {
+    Applied applied;
+    applied.delay = std::chrono::milliseconds(150); // a slow compositor
+    {
+        Worker worker([&](bool latin) { applied(latin); });
+        // Focus hops across fields while the first apply is still running.
+        auto started = std::chrono::steady_clock::now();
+        for (bool latin : {true, false, true, false, true}) {
+            worker.want(latin);
+        }
+        // fcitx5's thread is never held up by the compositor.
+        CHECK(std::chrono::steady_clock::now() - started < std::chrono::milliseconds(50));
+        applied.waitFor(2);
+        std::this_thread::sleep_for(std::chrono::milliseconds(200));
+        CHECK((applied.taken() == std::vector<bool>{false, true}));
+    }
+    CHECK((applied.taken() == std::vector<bool>{false, true, false}));
+}
+
 void staleHolderIsGivenBackOnRestart() {
     State state(temporaryDirectory());
     FakeCompositor compositor(1);
@@ -514,6 +570,50 @@ public:
     }
 };
 
+void theLoopKeepsItsPace() {
+    // Woken from quiet by output: a second look before anything else.
+    CHECK(nextPace(true, false, true, true) == Pace::SecondLook);
+    // A prompt found on the first look needs no second one, but polling.
+    CHECK(nextPace(true, true, true, true) == Pace::Poll);
+    // While a prompt is up, or terminals keep printing: poll.
+    CHECK(nextPace(false, true, false, true) == Pace::Poll);
+    CHECK(nextPace(false, false, true, true) == Pace::Poll);
+    // Without inotify there is nothing to wait on.
+    CHECK(nextPace(false, false, false, false) == Pace::Poll);
+    // Quiet: sleep, costing nothing.
+    CHECK(nextPace(false, false, false, true) == Pace::Sleep);
+}
+
+void watcherFindsThePromptInTheFocusedWindow() {
+    // The test process plays the terminal window: the prompt's terminal
+    // belongs to it, since its process descends from this one.
+    PtyChild prompt({"bash", "-c", "read -s -p pw: x; sleep 30"});
+    std::string path = terminalOf(prompt);
+    auto found = passwordPtysAmong({path});
+    CHECK(found.contains(path));
+    if (!found.contains(path)) {
+        return;
+    }
+    std::set<dev_t> devices{found[path]};
+    FakeCompositor compositor(1);
+    PromptWatcher watcher;
+
+    compositor.focused = getpid();
+    Prompt seen = watcher.look(compositor, devices, {});
+    CHECK(seen.pending && seen.inFocus);
+
+    compositor.focused = 1; // another window takes focus
+    seen = watcher.look(compositor, devices, {});
+    CHECK(seen.pending && !seen.inFocus);
+
+    compositor.focused = getpid(); // and gives it back
+    seen = watcher.look(compositor, devices, {});
+    CHECK(seen.pending && seen.inFocus);
+
+    seen = watcher.look(compositor, {}, {}); // the prompt is gone
+    CHECK(!seen.pending && !seen.inFocus);
+}
+
 void tmuxPaneIsSeenOnlyWhileVisible() {
     if (!runCommand({"tmux", "-V"})) {
         std::printf("    skipped: tmux is not installed\n");
@@ -575,6 +675,8 @@ int main() {
         {"state ignores leave without enter", stateIgnoresLeaveWithoutEnter},
         {"holder names are one safe line", holderNamesAreOneSafeLine},
         {"a stale holder is given back on restart", staleHolderIsGivenBackOnRestart},
+        {"the worker gives back first and last", workerGivesBackFirstAndLast},
+        {"the worker applies only the latest wish", workerAppliesOnlyTheLatestWish},
         {"keyboard layouts follow the majority", keyboardLayoutsFollowTheMajority},
         {"a silent compositor times out", silentCompositorTimesOut},
         {"a broken state file restores nothing", brokenStateFileRestoresNothing},
@@ -594,6 +696,8 @@ int main() {
         {"prompt is found among given terminals", promptIsFoundAmongGivenTerminals},
         {"tmux output is parsed", tmuxOutputIsParsed},
         {"commands are run and timed out", commandsAreRunAndTimedOut},
+        {"the watcher finds the prompt in the focused window", watcherFindsThePromptInTheFocusedWindow},
+        {"the loop keeps its pace", theLoopKeepsItsPace},
         {"tmux pane is seen only while visible", tmuxPaneIsSeenOnlyWhileVisible},
     };
     for (const auto &[name, test] : tests) {

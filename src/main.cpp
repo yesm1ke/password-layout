@@ -9,6 +9,7 @@
 #include "state.h"
 #include "tmux.h"
 #include "tty.h"
+#include "watch.h"
 
 #include <algorithm>
 #include <chrono>
@@ -34,68 +35,6 @@ const std::string kTtyHolder = "tty";
 volatile std::sig_atomic_t stopRequested = 0;
 
 void requestStop(int) { stopRequested = 1; }
-
-struct Prompt {
-    bool pending = false; // some terminal of ours is asking for a password
-    bool inFocus = false; // and it belongs to the focused window
-};
-
-// Whether a prompt on one of these terminals is in front of the user in the
-// focused window: the terminal belongs to the window directly, or it is the
-// visible pane of a tmux session shown there.
-bool promptInWindow(pid_t window, const std::set<dev_t> &devices,
-                    const std::unordered_map<pid_t, Process> &processes, Tmux &tmux,
-                    std::set<std::string> &tmuxClientTerminals) {
-    if (windowOwnsTty(window, devices, processes)) {
-        return true;
-    }
-    bool visible = false;
-    for (dev_t device : devices) {
-        if (auto answer = tmux.ask(device, window, processes)) {
-            tmuxClientTerminals.insert(answer->clientTerminals.begin(),
-                                       answer->clientTerminals.end());
-            visible = visible || answer->visibleInWindow;
-        }
-    }
-    return visible;
-}
-
-// Decides whether the pending prompts belong to the focused window.
-class PromptWatcher {
-public:
-    // `printed` are the terminals that printed since the previous look.
-    Prompt look(Compositor &compositor, std::set<dev_t> devices,
-                const std::set<std::string> &printed) {
-        // The compositor is only asked while a prompt is pending.
-        if (devices.empty()) {
-            devices_.clear();
-            tmuxClientTerminals_.clear();
-            return {};
-        }
-        pid_t focused = compositor.focusedPid();
-        // Walking the whole process table and asking tmux are the expensive
-        // parts, so they are only redone when the prompts or the focused window
-        // change, or when a tmux client redrew - which is what switching panes
-        // or windows inside tmux looks like from outside.
-        bool tmuxRedrew = std::ranges::any_of(
-            printed, [&](const auto &path) { return tmuxClientTerminals_.contains(path); });
-        if (devices != devices_ || focused != focused_ || tmuxRedrew) {
-            tmuxClientTerminals_.clear();
-            owned_ = promptInWindow(focused, devices, readProcesses(), tmux_,
-                                    tmuxClientTerminals_);
-            devices_ = std::move(devices);
-            focused_ = focused;
-        }
-        return {true, owned_};
-    }
-
-private:
-    std::set<dev_t> devices_;
-    pid_t focused_ = 0;
-    bool owned_ = false;
-    Tmux tmux_;
-    std::set<std::string> tmuxClientTerminals_;
-};
 
 int watchTty(Compositor &compositor, State &state) {
     // A previous run that died mid-prompt must not leave Latin held forever.
@@ -164,19 +103,17 @@ int watchTty(Compositor &compositor, State &state) {
             atPrompt = suspects;
         }
 
-        if (secondLookOwed && !pending) {
+        Pace pace = nextPace(secondLookOwed, pending, busy, activity.available());
+        secondLookOwed = false;
+        if (pace == Pace::SecondLook) {
             // Same terminals again.
             std::this_thread::sleep_for(std::chrono::milliseconds(kSettleMs));
-            secondLookOwed = false;
             continue;
         }
-        secondLookOwed = false;
-        if (pending || busy || !activity.available()) {
+        if (pace == Pace::Poll) {
             std::this_thread::sleep_for(std::chrono::milliseconds(kPollMs));
             busy = activity.drain() || pending;
         } else {
-            // Nothing is asking for a password and the terminals are quiet:
-            // sleep until one of them prints.
             busy = activity.wait(-1, layoutEvents.fd());
             secondLookOwed = busy;
         }
