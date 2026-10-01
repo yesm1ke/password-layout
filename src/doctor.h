@@ -32,5 +32,10 @@ std::optional<std::string> sudoVersion(std::string_view output);
 // The fcitx5 core version an addon description asks for ("0=core:5.1.0").
 std::optional<std::string> addonRequiresCore(std::string_view conf);
 
-// Whether a /proc/<pid>/maps text maps a library with this file name.
-bool mapsLibrary(std::string_view maps, std::string_view fileName);
+// Whether a /proc/<pid>/maps text maps a library with this file name, and
+// whether the file was replaced since (an updated package, not yet reloaded).
+enum class Mapped { No, Yes, Replaced };
+Mapped mapsLibrary(std::string_view maps, std::string_view fileName);
+
+// Whether a /proc/<pid>/exe link names a file replaced since it was started.
+bool exeReplaced(std::string_view link);

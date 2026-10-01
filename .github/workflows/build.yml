@@ -128,6 +128,8 @@ jobs:
           pacman -Syu --noconfirm
           pacman -U --noconfirm packaging/arch/*.pkg.tar.zst
           pacman -Ql password-layout
+          # The package enables nothing by itself (#25).
+          ! pacman -Ql password-layout | grep -q '\.wants/'
           # The addon must ask for a fcitx5 series, not the exact fcitx5 this
           # container had: fcitx5 silently skips it on anything older.
           grep -E '^0=core:[0-9]+\.[0-9]+\.0$' /usr/share/fcitx5/addon/passwordlayout.conf

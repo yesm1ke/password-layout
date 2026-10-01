@@ -92,9 +92,17 @@ sudo make PREFIX=/usr install
 `make install` only puts files in place (it honours `DESTDIR` and `PREFIX`).
 The recipe in `packaging/arch` builds from a release tag, so it works again
 with 0.7.0; the package is not in the AUR yet ([#11](https://github.com/yesm1ke/password-layout/issues/11)).
-The service is enabled for every user through
-`graphical-session.target.wants` and starts with the next graphical session;
-fcitx5 loads the addon when it next starts.
+Installing enables nothing, as usual on Arch. Each user turns the service on
+and restarts fcitx5 so it loads the addon (`make install-user` does the first
+part itself):
+
+```
+systemctl --user enable --now password-layout-tty
+password-layout doctor     # says what is still missing
+```
+
+To turn it off: `systemctl --user disable --now password-layout-tty`. The
+fcitx5 addon is unloaded when fcitx5 restarts after the package is removed.
 
 Other targets: `make test`, and `make bench` for the measurements in
 [BENCHMARKS.md](BENCHMARKS.md).

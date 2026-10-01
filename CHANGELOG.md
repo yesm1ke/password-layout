@@ -18,6 +18,13 @@ rewritten and they no longer match it. Their entries stay as a record.
   yours. The state is written atomically and read strictly.
 - The layout list comes from what most keyboards have, not from whichever
   device Hyprland lists first.
+- The package no longer enables the service for every user, nor starts or
+  restarts anything in running sessions (other users' fcitx5 included). It
+  prints what to run; `password-layout doctor` says what is missing. **When
+  upgrading from 0.6 or earlier, enable the service once:**
+  `systemctl --user enable password-layout-tty`.
+- `doctor` notices a service or addon still running from a package that has
+  been updated since, and a service that runs but is not enabled.
 
 ## 0.6.2 — 2026-10-01
 

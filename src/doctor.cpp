@@ -6,6 +6,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <dirent.h>
+#include <filesystem>
 #include <fstream>
 #include <map>
 #include <sstream>
@@ -75,7 +76,7 @@ Finding checkHyprland() {
 Finding checkService() {
     auto shown = runCommand(
         {"systemctl", "--user", "show", kUnit, "-p", "LoadState", "-p", "ActiveState", "-p",
-         "NRestarts"});
+         "NRestarts", "-p", "UnitFileState", "-p", "MainPID"});
     if (!shown) {
         return {Finding::Level::Fail, "terminal service: systemctl --user does not answer",
                 "the service needs a systemd user session"};
@@ -92,7 +93,22 @@ Finding checkService() {
     }
     std::string state = properties["ActiveState"];
     int restarts = std::atoi(properties["NRestarts"].c_str());
+    bool enabled = properties["UnitFileState"] == "enabled";
     if (state == "active" && restarts == 0) {
+        std::error_code error;
+        auto exe = std::filesystem::read_symlink("/proc/" + properties["MainPID"] + "/exe", error);
+        if (!error && exeReplaced(exe.string())) {
+            return {Finding::Level::Warn,
+                    "terminal service: running the binary of a package that has been updated "
+                    "since",
+                    "systemctl --user restart password-layout-tty"};
+        }
+        if (!enabled) {
+            return {Finding::Level::Warn,
+                    "terminal service: running, but not enabled: it will not start at the next "
+                    "login",
+                    "systemctl --user enable password-layout-tty"};
+        }
         return {Finding::Level::Ok, "terminal service: running", ""};
     }
     if (restarts > 0) {
@@ -109,7 +125,8 @@ Finding checkService() {
                     " times",
                 hint};
     }
-    return {Finding::Level::Fail, "terminal service: " + state,
+    return {Finding::Level::Fail,
+            "terminal service: " + state + (enabled ? "" : ", not enabled"),
             "systemctl --user enable --now password-layout-tty"};
 }
 
@@ -144,8 +161,16 @@ Finding checkFcitx() {
                 "start fcitx5 as the input method (Omarchy does this by default)"};
     }
     for (pid_t pid : pids) {
-        if (mapsLibrary(readFile("/proc/" + std::to_string(pid) + "/maps"), kAddon)) {
+        switch (mapsLibrary(readFile("/proc/" + std::to_string(pid) + "/maps"), kAddon)) {
+        case Mapped::Yes:
             return {Finding::Level::Ok, "fcitx5: running, addon loaded", ""};
+        case Mapped::Replaced:
+            return {Finding::Level::Warn,
+                    "fcitx5 runs the addon of a package that has been updated since",
+                    "restart fcitx5 to load the new one: fcitx5 -rd (on Omarchy: systemctl "
+                    "--user restart omarchy-fcitx5)"};
+        case Mapped::No:
+            break;
         }
     }
     // fcitx5 skips, without a word in its log, an addon that asks for a newer
@@ -240,15 +265,21 @@ std::optional<std::string> addonRequiresCore(std::string_view conf) {
     return std::nullopt;
 }
 
-bool mapsLibrary(std::string_view maps, std::string_view fileName) {
+Mapped mapsLibrary(std::string_view maps, std::string_view fileName) {
     std::string needle = "/" + std::string(fileName);
+    Mapped found = Mapped::No;
     for (const auto &line : split(maps, '\n')) {
         if (line.ends_with(needle)) {
-            return true;
+            return Mapped::Yes;
+        }
+        if (line.ends_with(needle + " (deleted)")) {
+            found = Mapped::Replaced;
         }
     }
-    return false;
+    return found;
 }
+
+bool exeReplaced(std::string_view link) { return link.ends_with(" (deleted)"); }
 
 std::vector<Finding> diagnose() {
     std::vector<Finding> findings{checkHyprland(), checkService(), checkFcitx()};
