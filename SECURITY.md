@@ -14,7 +14,7 @@ password field. It does not subscribe to key events, so it never sees what you
 type. `tools/check-addon-events`, run by CI on every change, fails if the
 addon's source names any other event type or a key event. It is a guard
 against an accidental change, not a proof: read
-`src/fcitx/passwordlayout.cpp` (about 160 lines) to check for yourself.
+`src/fcitx/passwordlayout.cpp` (about 110 lines) to check for yourself.
 
 **The terminal service** (`password-layout watch-tty`) reads, for terminals that
 just printed something:
@@ -28,7 +28,8 @@ just printed something:
 It never writes to a terminal, opens no network connections and runs as you,
 with no extra privileges. systemd sandboxes it on top of that: the file system
 is read-only apart from its own runtime directory and there is no network at
-all (these two need user namespaces, see "Troubleshooting" in the README), only
+all (these two need user namespaces; `password-layout doctor` says when the
+kernel has them off), only
 Unix sockets can be opened, and privileged system calls are refused
 (`systemd/password-layout-tty.service.in`,
 `systemd/sandbox-namespaces.conf`). Check it with
@@ -37,12 +38,17 @@ Unix sockets can be opened, and privileged system calls are refused
 **Both** talk to Hyprland over its socket only to read the keyboard layout and
 the focused window, and to switch the layout.
 
+**Your own programs** can hold Latin too, with `password-layout enter <name>`
+and `leave <name>` (README, "From your own scripts"). Like anything running as
+you, they could switch the layout without it; the name they give shows up in
+`status` and in the log.
+
 ## What it stores and logs
 
 - `$XDG_RUNTIME_DIR/password-layout/` (private to you, gone at logout): the
-  layout to restore, who currently holds Latin (`tty` or `im`) and the last
-  Latin layout used, as layout numbers.
-- The log has one line per switch, with layout numbers and `tty` or `im`.
+  layout to restore, who currently holds Latin (`tty`, `im`, or a name given
+  to `enter`) and the last Latin layout used, as layout numbers.
+- The log has one line per switch, with layout numbers and the holder's name.
   Nothing about the password, the window or the program asking for it.
 - Only if you turn on the addon's debug log by hand (README, "Troubleshooting")
   does it also log the program name of each focused field and whether it is a
@@ -59,9 +65,21 @@ never a leaked character.
 
 Releases are built from a tag by this repository's GitHub Actions. Each
 package has a build attestation and a GPG signature with a key used for
-nothing else; both say the same thing, that the package came from that
-workflow. How to check them, without adding the key to pacman's keyring, is in
-the README under "Install". Or build from a checkout and read what you build.
+nothing else; either check confirms that the package came from that workflow:
+
+```
+gh attestation verify password-layout-x86_64.pkg.tar.zst -R yesm1ke/password-layout
+```
+
+```
+curl -LO https://github.com/yesm1ke/password-layout/releases/latest/download/password-layout-x86_64.pkg.tar.zst.sig
+gpg --keyserver hkps://keyserver.ubuntu.com --recv-keys 7C5242797972ED2923B944029AC95674831AE330
+gpg --verify password-layout-x86_64.pkg.tar.zst.sig
+```
+
+The key (also in `packaging/arch/password-layout.asc`) signs releases and
+nothing else. Do not add it to pacman's keyring: pacman would then trust it for
+any package. Or build from a checkout and read what you build.
 
 ## Reporting a problem
 

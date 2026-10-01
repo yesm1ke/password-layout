@@ -1,5 +1,5 @@
 #!/bin/bash
-# Survey tool for stage 2: prints, whenever it changes, which window has focus
+# A live check: prints, whenever it changes, which window has focus
 # and what fcitx5 knows about the focused input field - above all whether the
 # application marked it as a password field.
 #
