@@ -16,6 +16,9 @@ case you hit, or a check on your system, there is useful too.
 
 ## Building and testing
 
+A map of the code, the live checks and the rules that are easy to break is in
+[AGENTS.md](AGENTS.md).
+
 ```
 make            # the service, and the fcitx5 addon when its headers are installed
 make test       # the tests; a few use real pseudo-terminals and tmux
