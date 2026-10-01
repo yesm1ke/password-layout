@@ -1,6 +1,6 @@
 pkgbase = password-layout
 	pkgdesc = Latin keyboard layout while you type a password: the last used Latin one, then yours back. For Hyprland with fcitx5, tested on Omarchy
-	pkgver = 0.5.0
+	pkgver = 0.6.0
 	pkgrel = 1
 	url = https://github.com/yesm1ke/password-layout
 	install = password-layout.install
@@ -12,7 +12,7 @@ pkgbase = password-layout
 	depends = glibc
 	depends = hyprland
 	depends = fcitx5
-	source = password-layout::git+https://github.com/yesm1ke/password-layout.git#tag=v0.5.0
+	source = password-layout::git+https://github.com/yesm1ke/password-layout.git#tag=v0.6.0
 	sha256sums = SKIP
 
 pkgname = password-layout
