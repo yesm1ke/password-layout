@@ -34,7 +34,7 @@ Hyprland and restores the old layout after the last holder leaves.
 | `tests/test.cpp` | all tests, one binary, no framework |
 | `bench/`, `BENCHMARKS.md` | resource measurements |
 | `tools/` | `release`, `check-version`, `release-notes`, `check-addon-events` (release/CI); `fake-field`, `fcitx-watch` (live checks); `setup-release-key` (maintainer only) |
-| `packaging/arch/` | PKGBUILD, `.SRCINFO`, install script, the release public key |
+| `packaging/arch/` | PKGBUILD (the only place the version is kept), install script, the release public key |
 | `.github/workflows/` | `ci.yml` (every pull request and push to main), `build.yml` (tests, package, smoke test; shared), `release.yml` (`v*` tags: sign, attest, publish) |
 
 Documents: [PLAN.md](PLAN.md) (stages and decisions), [STATUS.md](STATUS.md)

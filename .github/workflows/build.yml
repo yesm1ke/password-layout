@@ -86,7 +86,6 @@ jobs:
           useradd --create-home builder
           chown -R builder: .
           cd packaging/arch
-          su builder -c 'makepkg --printsrcinfo' | diff -u .SRCINFO -
           # Outside a release the tag does not exist yet: build this commit.
           if [[ $FROM_TAG != true ]]; then
             sed -i "s|git+\$url.git#tag=v\$pkgver|git+file://$root#commit=$commit|" PKGBUILD

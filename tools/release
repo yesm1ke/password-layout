@@ -1,7 +1,7 @@
 #!/bin/bash
 # Releases version X.Y.Z in two runs of the same command.
 #
-#   1. On main before the release: sets the version everywhere, dates the
+#   1. On main before the release: sets the version (the PKGBUILD), dates the
 #      CHANGELOG section, commits on a branch release-X.Y.Z, pushes it and
 #      opens a pull request. CI checks it like any other change.
 #   2. On main after that pull request is merged: if CI passed on this commit,
@@ -30,18 +30,14 @@ git fetch --quiet origin
 [[ $(git rev-parse HEAD) == $(git rev-parse origin/main) ]] || fail "main differs from origin/main"
 git ls-remote --exit-code --tags origin "$tag" >/dev/null && fail "tag $tag exists"
 
-if [[ $(sed -n 's/^VERSION := //p' Makefile) != "$version" ]]; then
+if [[ $(sed -n 's/^pkgver=//p' packaging/arch/PKGBUILD) != "$version" ]]; then
   grep -q "^## $version — unreleased$" CHANGELOG.md ||
     fail "CHANGELOG.md needs a \"## $version — unreleased\" section"
   git switch --quiet -c "release-$version"
-  sed -i "s/^VERSION := .*/VERSION := $version/" Makefile
   sed -i -e "s/^pkgver=.*/pkgver=$version/" -e "s/^pkgrel=.*/pkgrel=1/" packaging/arch/PKGBUILD
-  (cd packaging/arch && makepkg --printsrcinfo > .SRCINFO)
   sed -i "s/^## $version — unreleased$/## $version — $(date +%F)/" CHANGELOG.md
-  # The pacman URL in the README names the version, when there is one.
-  sed -i -E "s|releases/download/v[0-9.]+/password-layout-[0-9.]+-[0-9]+-|releases/download/v$version/password-layout-$version-1-|" README.md
   tools/check-version "$version"
-  git add Makefile packaging/arch/PKGBUILD packaging/arch/.SRCINFO CHANGELOG.md README.md
+  git add packaging/arch/PKGBUILD CHANGELOG.md
   git commit --quiet -m "Release $version"
   git push --quiet -u origin "release-$version"
   gh pr create --base main --head "release-$version" --title "Release $version" \

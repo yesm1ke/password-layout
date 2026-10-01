@@ -17,7 +17,8 @@ UNIT := password-layout-tty.service
 # be turned off alone (see the file).
 DROPIN := $(UNIT).d/sandbox-namespaces.conf
 
-VERSION := 0.7.0
+# The version lives in one place: the PKGBUILD.
+VERSION := $(shell sed -n 's/^pkgver=//p' packaging/arch/PKGBUILD)
 
 # The fcitx5 addon (password fields in graphical applications) is built when
 # fcitx5's development files are present, and skipped otherwise.
