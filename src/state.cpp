@@ -1,11 +1,13 @@
 #include "state.h"
 
 #include <algorithm>
+#include <charconv>
 #include <cerrno>
 #include <cstdio>
 #include <cstdlib>
 #include <fcntl.h>
 #include <fstream>
+#include <sstream>
 #include <stdexcept>
 #include <sys/file.h>
 #include <sys/stat.h>
@@ -35,6 +37,33 @@ public:
 private:
     int fd_ = -1;
 };
+
+// The whole line as a layout number, or nothing: a half-written or foreign
+// line must never read as layout 0.
+std::optional<int> parseLayout(const std::string &line, int minimum) {
+    int value = 0;
+    auto [end, error] = std::from_chars(line.data(), line.data() + line.size(), value);
+    if (error != std::errc() || end != line.data() + line.size() || value < minimum) {
+        return std::nullopt;
+    }
+    return value;
+}
+
+// Readers see either the old file or the new one, never a truncated one.
+void writeAtomically(const std::string &path, const std::string &text) {
+    std::string temporary = path + ".tmp";
+    {
+        std::ofstream file(temporary, std::ios::trunc);
+        file << text;
+        file.flush();
+        if (!file) {
+            throw std::system_error(errno, std::generic_category(), temporary);
+        }
+    }
+    if (std::rename(temporary.c_str(), path.c_str()) < 0) {
+        throw std::system_error(errno, std::generic_category(), path);
+    }
+}
 
 } // namespace
 
@@ -70,11 +99,11 @@ State::State(std::string directory) : directory_(std::move(directory)) {
 
 std::optional<int> State::lastLatin() const {
     std::ifstream file(lastLatinPath_);
-    int index = -1;
-    if (file >> index && index >= 0) {
-        return index;
+    std::string line;
+    if (!std::getline(file, line)) {
+        return std::nullopt;
     }
-    return std::nullopt;
+    return parseLayout(line, 0);
 }
 
 void State::noteLayout(Compositor &compositor) {
@@ -85,7 +114,7 @@ void State::noteLayout(Compositor &compositor) {
     }
     Lock lock(directory_);
     if (lastLatin() != current) {
-        std::ofstream(lastLatinPath_, std::ios::trunc) << current << '\n';
+        writeAtomically(lastLatinPath_, std::to_string(current) + '\n');
     }
 }
 
@@ -97,21 +126,29 @@ State::Contents State::load() const {
     if (!std::getline(file, line)) {
         return contents;
     }
-    contents.previous = std::atoi(line.c_str());
+    // Anything malformed counts as no state at all: switching nothing is
+    // safer than restoring a layout read from garbage.
+    auto previous = parseLayout(line, -1);
+    if (!previous) {
+        return {};
+    }
+    contents.previous = *previous;
     while (std::getline(file, line)) {
-        if (!line.empty()) {
-            contents.holders.push_back(line);
+        if (!isValidHolder(line)) {
+            return {};
         }
+        contents.holders.push_back(line);
     }
     return contents;
 }
 
 void State::save(const Contents &contents) const {
-    std::ofstream file(path_, std::ios::trunc);
-    file << contents.previous << '\n';
+    std::ostringstream text;
+    text << contents.previous << '\n';
     for (const auto &holder : contents.holders) {
-        file << holder << '\n';
+        text << holder << '\n';
     }
+    writeAtomically(path_, text.str());
 }
 
 void State::enter(const std::string &holder, Compositor &compositor) {

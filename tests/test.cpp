@@ -9,6 +9,7 @@
 #include <csignal>
 #include <cstdio>
 #include <cstdlib>
+#include <fstream>
 #include <functional>
 #include <optional>
 #include <pty.h>
@@ -245,6 +246,44 @@ void stateIgnoresLeaveWithoutEnter() {
     CHECK(compositor.switches.empty());
 }
 
+void staleHolderIsGivenBackOnRestart() {
+    State state(temporaryDirectory());
+    FakeCompositor compositor(1);
+    state.enter("im", compositor); // a password field; then fcitx5 dies
+    CHECK(compositor.index == 0);
+    compositor.index = 1; // the user switches back by hand
+
+    // While the dead source's "im" is held, a terminal prompt switches nothing.
+    state.enter("tty", compositor);
+    CHECK(compositor.index == 1);
+    state.leave("tty", compositor);
+
+    // The restarted addon gives "im" back first; prompts work again.
+    state.leave("im", compositor);
+    state.enter("tty", compositor);
+    CHECK(compositor.index == 0);
+    state.leave("tty", compositor);
+    CHECK(compositor.index == 1);
+}
+
+void brokenStateFileRestoresNothing() {
+    std::string directory = temporaryDirectory();
+    State state(directory);
+    FakeCompositor compositor(1);
+    // A first line that is not a number used to read as "restore layout 0".
+    for (const char *broken : {"\ntty\n", "x\ntty\n", "1x\ntty\n", "1\ntty\nnot a holder\n"}) {
+        std::ofstream(directory + "/state", std::ios::trunc) << broken;
+        compositor.switches.clear();
+        state.leave("tty", compositor);
+        CHECK(compositor.switches.empty());
+    }
+    // No temporary file is left behind by a save.
+    state.enter("tty", compositor);
+    state.leave("tty", compositor);
+    struct stat info;
+    CHECK(stat((directory + "/state.tmp").c_str(), &info) != 0);
+}
+
 void holderNamesAreOneSafeLine() {
     CHECK(isValidHolder("tty"));
     CHECK(isValidHolder("im"));
@@ -451,6 +490,8 @@ int main() {
         {"state restores only after the last holder", stateRestoresOnlyAfterLastHolder},
         {"state ignores leave without enter", stateIgnoresLeaveWithoutEnter},
         {"holder names are one safe line", holderNamesAreOneSafeLine},
+        {"a stale holder is given back on restart", staleHolderIsGivenBackOnRestart},
+        {"a broken state file restores nothing", brokenStateFileRestoresNothing},
         {"doctor helpers read versions and maps", doctorHelpersReadVersionsAndMaps},
         {"state uses the Latin layout wherever it is", stateUsesTheLatinLayoutWhereverItIs},
         {"state does nothing without a Latin layout", stateDoesNothingWithoutALatinLayout},
