@@ -3,6 +3,15 @@
 What changed for someone who installs the package. The day-to-day record is in
 [STATUS.md](STATUS.md).
 
+## 0.6.2 — unreleased
+
+- Fixed: the fcitx5 addon from the 0.6.1 package asked for fcitx5 5.1.23, the
+  version it was built with, and fcitx5 5.1.22 skipped it without a word, so
+  password fields in browsers no longer switched the layout. The addon now
+  asks for the 5.1 series.
+- `doctor` names this cause when it sees it: the running fcitx5 is older than
+  the one the addon asks for.
+
 ## 0.6.1 — 2026-10-01
 
 The first release built by CI. The tag v0.6.0 exists but was never published:
