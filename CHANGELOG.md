@@ -3,7 +3,7 @@
 What changed for someone who installs the package. The day-to-day record is in
 [STATUS.md](STATUS.md).
 
-## 0.6.2 — unreleased
+## 0.6.2 — 2026-10-01
 
 - Fixed: the fcitx5 addon from the 0.6.1 package asked for fcitx5 5.1.23, the
   version it was built with, and fcitx5 5.1.22 skipped it without a word, so
