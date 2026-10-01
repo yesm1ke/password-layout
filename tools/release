@@ -1,59 +1,94 @@
 #!/bin/bash
-# Prepares a release and hands it to CI: runs the tests on the committed code,
-# sets the version everywhere, dates the CHANGELOG section, commits, tags vX.Y.Z
-# and pushes. GitHub Actions (.github/workflows/release.yml) then builds,
-# tests again, signs and publishes. CI runs only for tags, so everything it
-# checks is checked here first: a failed tag cannot be reused.
+# Prepares a release and hands it to CI (.github/workflows/release.yml).
 #
-# Usage: tools/release 0.6.0
+#   tools/release 0.6.1 --rc   a release candidate: tests, sets the version
+#                              everywhere, commits, tags v0.6.1-rcN and pushes.
+#                              CI runs every check and builds and installs the
+#                              package, but signs and publishes nothing.
+#   tools/release 0.6.1        the release: tests, sets the version if no
+#                              candidate did, dates the CHANGELOG section,
+#                              commits, tags v0.6.1 and pushes; CI publishes.
 #
-# Before running: CHANGELOG.md has a "## 0.6.0 — unreleased" section, the work
-# is committed, and main is pushed. The tag is signed if git has a signing key.
+# A failed release tag cannot be reused, so put out a candidate first and tag
+# the release once its CI run is green.
+#
+# Before running: CHANGELOG.md has a "## 0.6.1 — unreleased" section, the work
+# is committed, and main is pushed. Tags are signed if git has a signing key.
 
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-version=${1:?usage: tools/release <version>}
+usage="usage: tools/release <version> [--rc]"
+version=${1:?$usage}
 version=${version#v}
-tag=v$version
+candidate=false
+case ${2:-} in
+  "") ;;
+  --rc) candidate=true ;;
+  *) echo "$usage" >&2; exit 1 ;;
+esac
 [[ $version =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]] || { echo "not a version: $version" >&2; exit 1; }
 
 fail() { echo "release: $*" >&2; exit 1; }
+tag_exists() {
+  git rev-parse -q --verify "refs/tags/$1" >/dev/null ||
+    git ls-remote --exit-code --tags origin "$1" >/dev/null
+}
 
 [[ $(git branch --show-current) == main ]] || fail "not on main"
 git diff --quiet && git diff --cached --quiet || fail "uncommitted changes"
 git fetch --quiet origin
 [[ $(git rev-parse HEAD) == $(git rev-parse origin/main) ]] || fail "main differs from origin/main"
-git rev-parse -q --verify "refs/tags/$tag" >/dev/null && fail "tag $tag exists"
-git ls-remote --exit-code --tags origin "$tag" >/dev/null && fail "tag $tag exists on origin"
+tag_exists "v$version" && fail "tag v$version exists"
 grep -q "^## $version — unreleased$" CHANGELOG.md || fail "CHANGELOG.md needs a \"## $version — unreleased\" section"
 
-# The same tests as CI, on exactly what is committed, away from build/.
+tag=v$version
+if $candidate; then
+  n=1
+  while tag_exists "v$version-rc$n"; do
+    n=$((n + 1))
+  done
+  tag=v$version-rc$n
+fi
+
+# The same tests as CI, on exactly what is committed, away from build/, and
+# without TERM, which CI containers do not set either.
 work=$(mktemp -d)
 trap 'rm -rf "$work"' EXIT
 git archive HEAD | tar -x -C "$work"
 echo "release: tests"
-(cd "$work" && CXXFLAGS="-O2 -Werror" make --quiet all test >/dev/null)
+(cd "$work" && CXXFLAGS="-O2 -Werror" env -u TERM make --quiet all test >/dev/null)
 echo "release: tests with sanitizers"
 (cd "$work" && make --quiet clean &&
   CXXFLAGS="-O1 -g -fno-omit-frame-pointer -fsanitize=address,undefined -fno-sanitize-recover=all" \
-  LDFLAGS="-fsanitize=address,undefined" make --quiet test >/dev/null)
+  LDFLAGS="-fsanitize=address,undefined" env -u TERM make --quiet test >/dev/null)
 tools/check-addon-events >/dev/null
 
+# The version, unless a candidate set it already.
 sed -i "s/^VERSION := .*/VERSION := $version/" Makefile
-sed -i -e "s/^pkgver=.*/pkgver=$version/" -e "s/^pkgrel=.*/pkgrel=1/" packaging/arch/PKGBUILD
+if [[ $(sed -n 's/^pkgver=//p' packaging/arch/PKGBUILD) != "$version" ]]; then
+  sed -i -e "s/^pkgver=.*/pkgver=$version/" -e "s/^pkgrel=.*/pkgrel=1/" packaging/arch/PKGBUILD
+fi
 (cd packaging/arch && makepkg --printsrcinfo > .SRCINFO)
-sed -i "s/^## $version — unreleased$/## $version — $(date +%F)/" CHANGELOG.md
+$candidate || sed -i "s/^## $version — unreleased$/## $version — $(date +%F)/" CHANGELOG.md
 tools/check-version "$version"
 
 git add Makefile packaging/arch/PKGBUILD packaging/arch/.SRCINFO CHANGELOG.md
-git commit --quiet -m "Release $version"
+if ! git diff --cached --quiet; then
+  if $candidate; then
+    git commit --quiet -m "Prepare $version"
+  else
+    git commit --quiet -m "Release $version"
+  fi
+fi
 if git config --get user.signingkey >/dev/null; then
-  git tag -s -m "password-layout $version" "$tag"
+  git tag -s -m "password-layout ${tag#v}" "$tag"
 else
-  git tag -a -m "password-layout $version" "$tag"
+  git tag -a -m "password-layout ${tag#v}" "$tag"
 fi
 git push --quiet origin main "$tag"
 
-echo "release: $tag pushed; CI publishes it:"
-echo "  https://github.com/yesm1ke/password-layout/actions"
+echo "release: $tag pushed; CI: https://github.com/yesm1ke/password-layout/actions"
+if $candidate; then
+  echo "release: once that run is green: tools/release $version"
+fi

@@ -404,8 +404,9 @@ void tmuxPaneIsSeenOnlyWhileVisible() {
         return;
     }
     // The client runs on a terminal this test process started, so the test
-    // plays the part of the terminal window.
-    PtyChild client({"tmux", "-L", TmuxServer::kName, "attach", "-t", "t"});
+    // plays the part of the terminal window. tmux refuses to attach without a
+    // terminal type, and CI containers have no TERM; env keeps the process id.
+    PtyChild client({"env", "TERM=xterm", "tmux", "-L", TmuxServer::kName, "attach", "-t", "t"});
 
     struct stat info;
     std::string path = first->substr(0, first->find('\n'));
