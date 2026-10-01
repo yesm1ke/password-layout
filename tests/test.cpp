@@ -1,5 +1,6 @@
 #include "activity.h"
 #include "compositor.h"
+#include "doctor.h"
 #include "state.h"
 #include "tmux.h"
 #include "tty.h"
@@ -267,6 +268,23 @@ void holderNamesAreOneSafeLine() {
     CHECK(state.holders().empty());
 }
 
+void doctorHelpersReadVersionsAndMaps() {
+    CHECK(versionLess("5.1.15-1", "5.1.16"));
+    CHECK(!versionLess("5.1.16-1", "5.1.16"));
+    CHECK(!versionLess("5.2", "5.1.16"));
+    CHECK(versionLess("1.9.13p3", "1.9.14"));
+    CHECK(!versionLess("1.9.17p2", "1.9.14"));
+    CHECK((sudoVersion("Sudo version 1.9.17p2\nSudoers policy plugin version 1.9.17p2\n") ==
+           std::optional<std::string>("1.9.17p2")));
+    CHECK(!sudoVersion("sudo: command not found"));
+    std::string maps = "7f00-7f01 r-xp 00000000 00:1f 123  /usr/lib/fcitx5/libpasswordlayout.so\n"
+                       "7f02-7f03 r--p 00000000 00:1f 124  /usr/lib/libnotpasswordlayout.so.1\n";
+    CHECK(mapsLibrary(maps, "libpasswordlayout.so"));
+    CHECK(!mapsLibrary(maps, "libFcitx5Core.so"));
+    CHECK(!mapsLibrary("7f02-7f03 r--p 0 00:1f 124  /x/libpasswordlayout.so.old\n",
+                       "libpasswordlayout.so"));
+}
+
 void silentReadIsAPromptOwnedByUs() {
     PtyChild child({"bash", "-c", "read -s -p pw: x"});
     auto devices = passwordPtys(getuid());
@@ -428,6 +446,7 @@ int main() {
         {"state restores only after the last holder", stateRestoresOnlyAfterLastHolder},
         {"state ignores leave without enter", stateIgnoresLeaveWithoutEnter},
         {"holder names are one safe line", holderNamesAreOneSafeLine},
+        {"doctor helpers read versions and maps", doctorHelpersReadVersionsAndMaps},
         {"state uses the Latin layout wherever it is", stateUsesTheLatinLayoutWhereverItIs},
         {"state does nothing without a Latin layout", stateDoesNothingWithoutALatinLayout},
         {"state keeps a Latin layout that is not the first", stateKeepsALatinLayoutThatIsNotTheFirst},

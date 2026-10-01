@@ -142,6 +142,20 @@ Other targets: `make test`, and `make bench` for the measurements in
 
 ## Troubleshooting
 
+Start with `password-layout doctor`. It checks everything the project depends
+on and says what is wrong and what to do:
+
+```
+ok    Hyprland: layouts us,ru; Latin: us
+ok    terminal service: running
+ok    fcitx5: running, addon loaded
+warn  fcitx5-qt 5.1.15-1: Qt windows that open with a password field already focused (KeePassXC, the polkit prompt, possibly the lock screen) are not recognised until focus moves
+      -> fixed upstream in fcitx5-qt 5.1.16; update once your distribution ships it
+note  sudo 1.9.17p2 runs commands in a terminal of its own: sudo's password prompt is recognised, prompts of the programs it runs are not
+```
+
+It exits with 1 when something is broken. For more detail:
+
 - `password-layout status` — current layout, who holds Latin (`tty` for
   terminals, `im` for graphical applications), which terminals are at a prompt
   and whether one of them is in the focused window.
@@ -190,6 +204,7 @@ fields costs at most one switch and a slow compositor cannot delay typing.
 | `watch-tty` | the service: watches terminals for password prompts |
 | `enter <who>` / `leave <who>` | for other sources: "Latin is needed" / "no longer needed" |
 | `status` | current layout, who is holding Latin, which terminals are at a prompt |
+| `doctor` | checks the setup and explains what is wrong |
 
 The terminal service and the addon hold Latin under separate names (`tty` and
 `im`). The layout that was active before the first of them asked for Latin is
@@ -199,7 +214,7 @@ restored after the last one lets go; it is kept in
 Source layout: `src/fcitx/` is the fcitx5 addon, `src/tty.*` recognises a prompt and finds the window that owns
 the terminal, `src/activity.*` waits for terminal output, `src/compositor.*`
 talks to Hyprland, `src/tmux.*` asks tmux about panes and clients,
-`src/state.*` tracks who holds Latin and what to restore,
+`src/state.*` tracks who holds Latin and what to restore, `src/doctor.*` checks the setup,
 `src/main.cpp` has the subcommands and the service loop.
 
 ## Limitations

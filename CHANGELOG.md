@@ -19,6 +19,9 @@ What changed for someone who installs the package. The day-to-day record is in
   privileged system calls (`systemd-analyze --user security` rates it 2.9
   instead of 9.4). The part that needs user namespaces is a separate drop-in;
   see README, "Troubleshooting", if your kernel has them turned off.
+- `password-layout doctor`: one command that checks Hyprland and its Latin
+  layout, the service, fcitx5 and the addon, and known problems of fcitx5-qt
+  and sudo, and says what to do.
 - `enter` and `leave` accept only holder names of lowercase letters, digits and
   `-`.
 

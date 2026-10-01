@@ -20,9 +20,7 @@ Plan agreed on 2026-10-01: security, ease of use, releases built by CI.
    and attested by GitHub Actions. Before the merge: tag ruleset and private
    vulnerability reporting on GitHub.
 2. ~~Service and code hardening~~ — done, see the journal.
-3. `password-layout doctor` → 0.7.0: one command that checks Hyprland, the
-   Latin layout, the service, fcitx5 and the addon, fcitx5-qt's version and
-   sudo's `use_pty`, and explains what is wrong.
+3. ~~`password-layout doctor`~~ — done, goes out in 0.6.0 as well.
 4. When Arch ships fcitx5-qt 5.1.16: re-check KeePassXC, the polkit prompt and
    the Omarchy lock screen (backlog).
 5. Prompts that draw asterisks, by foreground process name (backlog).
@@ -501,3 +499,27 @@ The work stays on the `release-pipeline` branch until it is ready for main.
   file. Test added (25 tests).
 - Not done: the `fcitx5<5.2` pin (see the release pipeline entry).
 - Releases: stage 1 and stage 2 go out together as 0.6.0; CHANGELOG renamed.
+
+#### `password-layout doctor` (stage 3 of the plan)
+
+`src/doctor.*`, the subcommand runs before anything that needs Hyprland, so it
+can report Hyprland missing. Checks: Hyprland reachable and a Latin layout in
+`kb_layout` (FAIL otherwise); the user unit loaded, active and not restarting
+(FAIL/WARN; when it restarts and `kernel.unprivileged_userns_clone` is 0 the
+hint is the empty drop-in that turns the namespace part of the sandbox off);
+fcitx5 of this user running and `libpasswordlayout.so` in its `/proc/<pid>/maps`
+(WARN); `pacman -Q fcitx5-qt` older than 5.1.16 (WARN, the upstream bug);
+`sudo -V` 1.9.14 or newer (a note: prompts of programs run under sudo are not
+recognised). Exit code 1 when anything FAILs. `Hyprland::layoutList()` added
+for the message. Tests for the version comparison, the `sudo -V` parsing and
+the maps match (26 tests).
+
+Live on the development machine: ok for Hyprland (`us,ru`, Latin `us`), the
+service and the addon; warn for fcitx5-qt 5.1.15-1; the sudo note. Also
+checked: without `HYPRLAND_INSTANCE_SIGNATURE` and with the service stopped
+both FAIL with a hint and exit code 1 (the service was started again).
+Not checked: the restart-loop hint, which needs a kernel without unprivileged
+user namespaces.
+
+Plan item 3 (no update check in `doctor`) kept: the service and the tool make
+no network requests.

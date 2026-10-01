@@ -175,6 +175,11 @@ std::vector<bool> Hyprland::latinLayouts() {
     return ::latinLayouts(layouts.front(), variants.empty() ? "" : variants.front());
 }
 
+std::string Hyprland::layoutList() {
+    auto layouts = jsonStrings(request("j/devices"), "layout");
+    return layouts.empty() ? std::string() : layouts.front();
+}
+
 void Hyprland::setLayout(int index) {
     // "all", never "current": with fcitx5 running, "current" resolves to
     // whichever device Hyprland saw last, which is often not a keyboard.
