@@ -6,6 +6,7 @@
 # Usage: tools/check-version 0.6.0   (a tag name such as v0.6.0 is fine)
 
 set -euo pipefail
+trap 'echo "check-version: failed at line $LINENO" >&2' ERR
 cd "$(dirname "$0")/.."
 
 want=${1:?usage: tools/check-version <version>}
@@ -26,7 +27,9 @@ check PKGBUILD "$(sed -n 's/^pkgver=//p' packaging/arch/PKGBUILD)"
 check .SRCINFO "$(sed -n 's/^\tpkgver = //p' packaging/arch/.SRCINFO)"
 check ".SRCINFO source tag" "$(sed -n 's/.*#tag=v//p' packaging/arch/.SRCINFO)"
 grep -q '@FINGERPRINT@' README.md && { echo "README.md still has the key fingerprint placeholder" >&2; status=1; }
-readme=$(grep -oE 'releases/download/v[0-9.]+/password-layout-[0-9.]+-' README.md | head -1)
+# No versioned URL in the README is fine (grep finding nothing must not end
+# the script under pipefail).
+readme=$(grep -oE 'releases/download/v[0-9.]+/password-layout-[0-9.]+-' README.md | head -1 || true)
 [[ -z $readme || $readme == "releases/download/v$want/password-layout-$want-" ]] ||
   [[ $(sed -n "s/^## $want — //p" CHANGELOG.md) == unreleased ]] ||
   { echo "README.md names $readme for pacman, expected $want" >&2; status=1; }
