@@ -283,6 +283,10 @@ void doctorHelpersReadVersionsAndMaps() {
     CHECK(!mapsLibrary(maps, "libFcitx5Core.so"));
     CHECK(!mapsLibrary("7f02-7f03 r--p 0 00:1f 124  /x/libpasswordlayout.so.old\n",
                        "libpasswordlayout.so"));
+    CHECK((addonRequiresCore("[Addon]\nName=x\n\n[Addon/Dependencies]\n0=core:5.1.23\n") ==
+           std::optional<std::string>("5.1.23")));
+    CHECK(!addonRequiresCore("[Addon]\nName=x\n"));
+    CHECK(versionLess("5.1.22", "5.1.23"));
 }
 
 void silentReadIsAPromptOwnedByUs() {

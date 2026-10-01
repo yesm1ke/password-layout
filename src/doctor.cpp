@@ -148,6 +148,20 @@ Finding checkFcitx() {
             return {Finding::Level::Ok, "fcitx5: running, addon loaded", ""};
         }
     }
+    // fcitx5 skips, without a word in its log, an addon that asks for a newer
+    // core than the running one.
+    auto running = runCommand({"fcitx5", "--version"});
+    for (const char *conf : {"/usr/share/fcitx5/addon/passwordlayout.conf",
+                             "/usr/local/share/fcitx5/addon/passwordlayout.conf"}) {
+        auto required = addonRequiresCore(readFile(conf));
+        if (running && required && versionLess(trim(*running), *required)) {
+            return {Finding::Level::Warn,
+                    "fcitx5 " + trim(*running) + " is running without the addon, which needs " +
+                        *required + " or newer",
+                    "update the system (sudo pacman -Syu), or install a package built for this "
+                    "fcitx5"};
+        }
+    }
     return {Finding::Level::Warn, "fcitx5 is running without the addon",
             "restart fcitx5 so it loads it: fcitx5 -rd (on Omarchy: systemctl --user restart "
             "omarchy-fcitx5)"};
@@ -214,6 +228,16 @@ std::optional<std::string> sudoVersion(std::string_view output) {
     }
     auto line = output.substr(prefix.size());
     return std::string(line.substr(0, line.find('\n')));
+}
+
+std::optional<std::string> addonRequiresCore(std::string_view conf) {
+    constexpr std::string_view key = "=core:";
+    for (const auto &line : split(conf, '\n')) {
+        if (auto at = line.find(key); at != std::string::npos) {
+            return trim(line.substr(at + key.size()));
+        }
+    }
+    return std::nullopt;
 }
 
 bool mapsLibrary(std::string_view maps, std::string_view fileName) {
