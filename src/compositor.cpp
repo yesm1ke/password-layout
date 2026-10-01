@@ -6,6 +6,7 @@
 #include <map>
 #include <stdexcept>
 #include <sys/socket.h>
+#include <sys/time.h>
 #include <sys/un.h>
 #include <system_error>
 #include <unistd.h>
@@ -102,6 +103,27 @@ std::vector<bool> latinLayouts(std::string_view layouts, std::string_view varian
     return latin;
 }
 
+std::pair<std::string, std::string> keyboardLayouts(std::string_view devices) {
+    // Like layoutIndex(): what most keyboards have, not the first one listed
+    // (which may be a virtual or ACPI device), and not the one Hyprland marks
+    // "main" (here an ACPI sleep button).
+    auto layouts = jsonStrings(devices, "layout");
+    auto variants = jsonStrings(devices, "variant");
+    if (layouts.empty()) {
+        return {};
+    }
+    std::map<std::string, int> counts;
+    size_t best = 0;
+    for (size_t index = 0; index < layouts.size(); ++index) {
+        if (++counts[layouts[index]] > counts[layouts[best]]) {
+            best = index;
+        }
+    }
+    // Every keyboard entry carries both keys, so the lists line up.
+    bool aligned = variants.size() == layouts.size();
+    return {layouts[best], aligned ? variants[best] : std::string()};
+}
+
 int mostCommon(const std::vector<long> &values, int fallback) {
     std::map<long, int> counts;
     int best = fallback;
@@ -133,6 +155,11 @@ std::string Hyprland::request(std::string_view command) const {
     }
     std::string reply;
     try {
+        // A hung compositor must not hang the service, nor fcitx5's exit,
+        // which waits for the addon's worker.
+        timeval timeout{1, 0};
+        setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
+        setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout));
         if (connect(fd, reinterpret_cast<sockaddr *>(&address), sizeof(address)) < 0) {
             fail("connect to Hyprland");
         }
@@ -144,6 +171,9 @@ std::string Hyprland::request(std::string_view command) const {
         char buffer[8192];
         for (;;) {
             ssize_t count = read(fd, buffer, sizeof(buffer));
+            if (count < 0 && (errno == EAGAIN || errno == EWOULDBLOCK)) {
+                throw std::runtime_error("Hyprland did not answer within a second");
+            }
             if (count < 0) {
                 fail("read from Hyprland");
             }
@@ -167,20 +197,11 @@ int Hyprland::layoutIndex() {
 }
 
 std::vector<bool> Hyprland::latinLayouts() {
-    // Every keyboard gets the same kb_layout from the config; read the first.
-    std::string devices = request("j/devices");
-    auto layouts = jsonStrings(devices, "layout");
-    auto variants = jsonStrings(devices, "variant");
-    if (layouts.empty()) {
-        return {};
-    }
-    return ::latinLayouts(layouts.front(), variants.empty() ? "" : variants.front());
+    auto [layouts, variants] = keyboardLayouts(request("j/devices"));
+    return layouts.empty() ? std::vector<bool>{} : ::latinLayouts(layouts, variants);
 }
 
-std::string Hyprland::layoutList() {
-    auto layouts = jsonStrings(request("j/devices"), "layout");
-    return layouts.empty() ? std::string() : layouts.front();
-}
+std::string Hyprland::layoutList() { return keyboardLayouts(request("j/devices")).first; }
 
 void Hyprland::setLayout(int index) {
     // "all", never "current": with fcitx5 running, "current" resolves to

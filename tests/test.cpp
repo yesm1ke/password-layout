@@ -9,14 +9,17 @@
 #include <csignal>
 #include <cstdio>
 #include <cstdlib>
+#include <filesystem>
 #include <fstream>
 #include <functional>
 #include <optional>
 #include <pty.h>
 #include <stdexcept>
 #include <string>
+#include <sys/socket.h>
 #include <sys/stat.h>
 #include <sys/sysmacros.h>
+#include <sys/un.h>
 #include <sys/wait.h>
 #include <thread>
 #include <unistd.h>
@@ -244,6 +247,54 @@ void stateIgnoresLeaveWithoutEnter() {
     FakeCompositor compositor(1);
     state.leave("tty", compositor);
     CHECK(compositor.switches.empty());
+}
+
+void keyboardLayoutsFollowTheMajority() {
+    // A virtual keyboard listed first with its own layout must not win.
+    std::string devices = R"({"keyboards": [
+        {"name": "virtual", "layout": "us", "variant": "", "main": false},
+        {"name": "real", "layout": "us,ru", "variant": ",", "main": false},
+        {"name": "sleep-button", "layout": "us,ru", "variant": ",", "main": true}]})";
+    CHECK((keyboardLayouts(devices) == std::pair<std::string, std::string>{"us,ru", ","}));
+    CHECK(keyboardLayouts("{}").first.empty());
+}
+
+void silentCompositorTimesOut() {
+    // A socket that accepts connections (through the backlog) and never
+    // answers, where Hyprland's would be.
+    std::string runtime = temporaryDirectory();
+    std::string directory = runtime + "/hypr/test";
+    std::filesystem::create_directories(directory);
+    int server = socket(AF_UNIX, SOCK_STREAM, 0);
+    sockaddr_un address{};
+    address.sun_family = AF_UNIX;
+    std::string path = directory + "/.socket.sock";
+    path.copy(address.sun_path, sizeof(address.sun_path) - 1);
+    CHECK(bind(server, reinterpret_cast<sockaddr *>(&address), sizeof(address)) == 0);
+    CHECK(listen(server, 4) == 0);
+
+    std::string savedRuntime = std::getenv("XDG_RUNTIME_DIR") ? std::getenv("XDG_RUNTIME_DIR") : "";
+    std::string savedSignature = std::getenv("HYPRLAND_INSTANCE_SIGNATURE")
+                                     ? std::getenv("HYPRLAND_INSTANCE_SIGNATURE")
+                                     : "";
+    setenv("XDG_RUNTIME_DIR", runtime.c_str(), 1);
+    setenv("HYPRLAND_INSTANCE_SIGNATURE", "test", 1);
+    auto started = std::chrono::steady_clock::now();
+    bool threw = false;
+    try {
+        Hyprland hyprland;
+        hyprland.layoutIndex();
+    } catch (const std::runtime_error &) {
+        threw = true;
+    }
+    auto waited = std::chrono::steady_clock::now() - started;
+    CHECK(threw);
+    CHECK(waited < std::chrono::seconds(3));
+    close(server);
+    savedRuntime.empty() ? unsetenv("XDG_RUNTIME_DIR")
+                         : setenv("XDG_RUNTIME_DIR", savedRuntime.c_str(), 1);
+    savedSignature.empty() ? unsetenv("HYPRLAND_INSTANCE_SIGNATURE")
+                           : setenv("HYPRLAND_INSTANCE_SIGNATURE", savedSignature.c_str(), 1);
 }
 
 void staleHolderIsGivenBackOnRestart() {
@@ -491,6 +542,8 @@ int main() {
         {"state ignores leave without enter", stateIgnoresLeaveWithoutEnter},
         {"holder names are one safe line", holderNamesAreOneSafeLine},
         {"a stale holder is given back on restart", staleHolderIsGivenBackOnRestart},
+        {"keyboard layouts follow the majority", keyboardLayoutsFollowTheMajority},
+        {"a silent compositor times out", silentCompositorTimesOut},
         {"a broken state file restores nothing", brokenStateFileRestoresNothing},
         {"doctor helpers read versions and maps", doctorHelpersReadVersionsAndMaps},
         {"state uses the Latin layout wherever it is", stateUsesTheLatinLayoutWhereverItIs},

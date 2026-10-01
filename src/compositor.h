@@ -4,6 +4,7 @@
 #include <string>
 #include <string_view>
 #include <sys/types.h>
+#include <utility>
 #include <vector>
 
 // What the rest of the program needs from the window manager.
@@ -73,6 +74,9 @@ std::vector<std::string> jsonStrings(std::string_view json, std::string_view key
 // from the same list Omarchy uses to decide whether to put "us" first; a
 // variant with "latin" in its name (rs(latin)) makes it Latin again.
 std::vector<bool> latinLayouts(std::string_view layouts, std::string_view variants);
+
+// The kb_layout and kb_variant most keyboards in a `j/devices` reply have.
+std::pair<std::string, std::string> keyboardLayouts(std::string_view devices);
 
 // The value most of them agree on; `fallback` when there are none.
 int mostCommon(const std::vector<long> &values, int fallback);
