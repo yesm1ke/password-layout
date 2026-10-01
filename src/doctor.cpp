@@ -3,6 +3,7 @@
 #include "compositor.h"
 #include "tmux.h"
 
+#include <algorithm>
 #include <cstdio>
 #include <cstdlib>
 #include <dirent.h>
@@ -192,6 +193,29 @@ Finding checkFcitx() {
             "omarchy-fcitx5)"};
 }
 
+// Layouts switched by fcitx5 instead of Hyprland are not handled (#34); say so
+// rather than report "ok" for a setup where nothing will switch.
+std::optional<Finding> checkFcitxLayouts() {
+    const char *config = std::getenv("XDG_CONFIG_HOME");
+    const char *home = std::getenv("HOME");
+    std::string profile = config && *config ? std::string(config) + "/fcitx5/profile"
+                          : home              ? std::string(home) + "/.config/fcitx5/profile"
+                                              : std::string();
+    auto layouts = fcitxKeyboardLayouts(readFile(profile));
+    if (layouts.size() < 2) {
+        return std::nullopt;
+    }
+    std::string list;
+    for (const auto &layout : layouts) {
+        list += (list.empty() ? "" : ", ") + layout;
+    }
+    return Finding{Finding::Level::Warn,
+                   "fcitx5 switches between keyboard layouts (" + list +
+                       "); only layouts in Hyprland's kb_layout are switched for passwords",
+                   "keep one keyboard layout in fcitx5 and list the others in kb_layout "
+                   "(Hyprland's input settings)"};
+}
+
 std::optional<Finding> checkFcitxQt() {
     auto installed = runCommand({"pacman", "-Q", "fcitx5-qt"});
     if (!installed) {
@@ -255,6 +279,22 @@ std::optional<std::string> sudoVersion(std::string_view output) {
     return std::string(line.substr(0, line.find('\n')));
 }
 
+std::vector<std::string> fcitxKeyboardLayouts(std::string_view profile) {
+    std::vector<std::string> layouts;
+    bool inItem = false;
+    for (const auto &line : split(profile, '\n')) {
+        if (line.starts_with("[")) {
+            inItem = line.find("/Items/") != std::string::npos;
+        } else if (inItem && line.starts_with("Name=keyboard-")) {
+            std::string name = trim(line.substr(5));
+            if (std::ranges::find(layouts, name) == layouts.end()) {
+                layouts.push_back(name);
+            }
+        }
+    }
+    return layouts;
+}
+
 std::optional<std::string> addonRequiresCore(std::string_view conf) {
     constexpr std::string_view key = "=core:";
     for (const auto &line : split(conf, '\n')) {
@@ -283,7 +323,7 @@ bool exeReplaced(std::string_view link) { return link.ends_with(" (deleted)"); }
 
 std::vector<Finding> diagnose() {
     std::vector<Finding> findings{checkHyprland(), checkService(), checkFcitx()};
-    for (auto optional : {checkFcitxQt(), checkSudo()}) {
+    for (auto optional : {checkFcitxLayouts(), checkFcitxQt(), checkSudo()}) {
         if (optional) {
             findings.push_back(*optional);
         }

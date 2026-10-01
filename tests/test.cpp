@@ -398,6 +398,12 @@ void doctorHelpersReadVersionsAndMaps() {
     CHECK(mapsLibrary("7f00-7f01 r-xp 0 00:1f 123  /usr/lib/fcitx5/libpasswordlayout.so (deleted)\n",
                       "libpasswordlayout.so") == Mapped::Replaced);
     CHECK(exeReplaced("/usr/bin/password-layout (deleted)"));
+    std::string omarchy = "[Groups/0]\nName=Default\nDefault Layout=us\nDefaultIM=keyboard-us\n\n"
+                          "[Groups/0/Items/0]\nName=keyboard-us\n\n[GroupOrder]\n0=Default\n";
+    CHECK(fcitxKeyboardLayouts(omarchy) == std::vector<std::string>{"keyboard-us"});
+    std::string switching = omarchy + "[Groups/0/Items/1]\nName=keyboard-ru\n"
+                                      "[Groups/1/Items/0]\nName=keyboard-us\n[Groups/1/Items/1]\nName=pinyin\n";
+    CHECK((fcitxKeyboardLayouts(switching) == std::vector<std::string>{"keyboard-us", "keyboard-ru"}));
     CHECK(!exeReplaced("/usr/bin/password-layout"));
     CHECK(Mapped::No == mapsLibrary("7f02-7f03 r--p 0 00:1f 124  /x/libpasswordlayout.so.old\n",
                        "libpasswordlayout.so"));
