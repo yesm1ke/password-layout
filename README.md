@@ -1,8 +1,6 @@
 # password-layout
 
-[![Release](https://img.shields.io/github/v/release/yesm1ke/password-layout)](https://github.com/yesm1ke/password-layout/releases/latest)
 [![Release workflow](https://github.com/yesm1ke/password-layout/actions/workflows/release.yml/badge.svg)](https://github.com/yesm1ke/password-layout/actions/workflows/release.yml)
-[![Verified releases](https://img.shields.io/badge/releases-GPG%20signed%20%2B%20attested-brightgreen)](#checking-the-package)
 [![For Hyprland, fcitx5, Arch](https://img.shields.io/badge/for-Hyprland%20%C2%B7%20fcitx5%20%C2%B7%20Arch-blue)](#requirements)
 [![License: MIT](https://img.shields.io/github/license/yesm1ke/password-layout)](LICENSE)
 
@@ -70,69 +68,16 @@ installed and running as the input method. Only Omarchy has been tested so far.
 
 ## Install
 
-On Arch-based systems (Arch, Omarchy, …) install the package from the latest
-[release](https://github.com/yesm1ke/password-layout/releases):
+There is no release to download at the moment. The releases up to 0.6.2 were
+withdrawn on 2026-10-01 after the history was rewritten
+([#27](https://github.com/yesm1ke/password-layout/issues/27)); the next one, 0.7.0, will be built and published by the new CI
+([#36](https://github.com/yesm1ke/password-layout/issues/36)). Until then, build from a checkout.
 
-```
-curl -LO https://github.com/yesm1ke/password-layout/releases/latest/download/password-layout-x86_64.pkg.tar.zst
-sudo pacman -U password-layout-x86_64.pkg.tar.zst
-```
-
-That is all. The service is enabled for every user by the package, and the
-install script starts it and restarts fcitx5 (so it loads the addon) in the
-sessions of users who are logged in; others get both at their next login.
-
-To update, run the same two commands again. There are no automatic updates
-until the package is in the AUR; to hear about new versions, use "Watch →
-Custom → Releases" on GitHub.
-
-### Checking the package
-
-Releases are built from the tag by GitHub Actions, never on a personal machine,
-and every package can be checked in two independent ways.
-
-With the GitHub CLI, which confirms the file was built by this repository's
-release workflow:
-
-```
-gh attestation verify password-layout-x86_64.pkg.tar.zst -R yesm1ke/password-layout
-```
-
-With pacman itself: trust the release key once, and pacman verifies the
-signature on every install, so the URL can then be given to it directly:
-
-```
-sudo pacman-key --recv-keys 7C5242797972ED2923B944029AC95674831AE330
-sudo pacman-key --lsign-key 7C5242797972ED2923B944029AC95674831AE330
-sudo pacman -U https://github.com/yesm1ke/password-layout/releases/download/v0.6.2/password-layout-0.6.2-1-x86_64.pkg.tar.zst
-```
-
-Give pacman the URL with the version in it, as above, never the
-`latest/download` one: pacman keeps downloads in its cache by file name, and
-for a name it already has it installs the cached file instead of fetching the
-new one, so an update would reinstall the old version.
-
-The key is also in the repository, `packaging/arch/password-layout.asc`; it
-signs releases and nothing else. `SHA256SUMS` and its signature
-`SHA256SUMS.asc` are attached to every release as well. What the service and
-the addon can see is described in [SECURITY.md](SECURITY.md).
-
-### Other ways to install
-
-The attached package is built for x86_64. To build it yourself, on any
-architecture, use the recipe in `packaging/arch`:
+For the current user only (no root needed):
 
 ```
 git clone https://github.com/yesm1ke/password-layout
-cd password-layout/packaging/arch
-makepkg -si
-```
-
-The package is not in the AUR yet ([#11](https://github.com/yesm1ke/password-layout/issues/11)).
-
-From a checkout, for the current user only (no root needed):
-
-```
+cd password-layout
 make install-user     # build, copy to ~/.local/bin, enable the user service
 make uninstall-user
 ```
@@ -145,6 +90,8 @@ sudo make PREFIX=/usr install
 ```
 
 `make install` only puts files in place (it honours `DESTDIR` and `PREFIX`).
+The recipe in `packaging/arch` builds from a release tag, so it works again
+with 0.7.0; the package is not in the AUR yet ([#11](https://github.com/yesm1ke/password-layout/issues/11)).
 The service is enabled for every user through
 `graphical-session.target.wants` and starts with the next graphical session;
 fcitx5 loads the addon when it next starts.

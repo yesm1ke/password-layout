@@ -3,6 +3,9 @@
 What changed for someone who installs the package. The day-to-day record is in
 [STATUS.md](STATUS.md).
 
+The releases below, up to 0.6.2, were withdrawn on 2026-10-01: the history was
+rewritten and they no longer match it. Their entries stay as a record.
+
 ## 0.6.2 — 2026-10-01
 
 - Fixed: the fcitx5 addon from the 0.6.1 package asked for fcitx5 5.1.23, the

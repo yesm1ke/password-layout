@@ -55,10 +55,8 @@ never a leaked character.
 
 ## Verifying a release
 
-Releases are built from the tag by GitHub Actions, not on a personal machine.
-Each package is GPG-signed and has a GitHub build attestation that ties it to
-the workflow run and the commit; `SHA256SUMS` is signed as well. How to check
-both is in the README, under "Install".
+There is no release at the moment; releases are being reworked
+([#26](https://github.com/yesm1ke/password-layout/issues/26)). Build from a checkout and read the code you build.
 
 ## Reporting a problem
 
