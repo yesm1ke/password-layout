@@ -5,6 +5,7 @@
 
 #include "activity.h"
 #include "compositor.h"
+#include "doctor.h"
 #include "state.h"
 #include "tmux.h"
 #include "tty.h"
@@ -225,7 +226,8 @@ int usage() {
     std::fputs("usage: password-layout enter <holder>\n"
                "       password-layout leave <holder>\n"
                "       password-layout watch-tty\n"
-               "       password-layout status\n",
+               "       password-layout status\n"
+               "       password-layout doctor\n",
                stderr);
     return 2;
 }
@@ -236,8 +238,13 @@ int main(int argc, char **argv) {
     std::string command = argc > 1 ? argv[1] : "";
     bool takesHolder = command == "enter" || command == "leave";
     if (argc != (takesHolder ? 3 : 2) ||
-        !(takesHolder || command == "watch-tty" || command == "status")) {
+        !(takesHolder || command == "watch-tty" || command == "status" || command == "doctor")) {
         return usage();
+    }
+    // Before anything that needs Hyprland: finding out why it is missing is
+    // part of the job.
+    if (command == "doctor") {
+        return printFindings(diagnose());
     }
 
     try {

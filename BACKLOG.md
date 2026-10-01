@@ -185,11 +185,3 @@ cd aur && git add -A && git commit -m "Initial import" && git push
 After that `omarchy pkg aur add password-layout` (or any AUR helper) installs
 it. The AUR maintainer line and commits carry an address too; the recipe uses
 the GitHub no-reply one.
-
-## Releasing a new version
-
-Not automated. By hand: set `pkgver` in `packaging/arch/PKGBUILD`, regenerate
-`.SRCINFO` (`makepkg --printsrcinfo > .SRCINFO`), commit, tag `vX.Y.Z` on that
-commit and push both; then build with `makepkg`, attach the package to a GitHub
-release, and update the URL in the README. Worth a script or a CI job once there
-is a second release.

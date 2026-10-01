@@ -1,0 +1,19 @@
+#!/bin/bash
+# SECURITY.md promises that the fcitx5 addon never sees key presses: it follows
+# only focus and the capability flags of the focused field. Every key press goes
+# through fcitx5, so this is checked on every release rather than trusted.
+
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+addon=src/fcitx/passwordlayout.cpp
+allowed='InputContextFocusIn|InputContextFocusOut|InputContextCapabilityChanged'
+
+events=$(grep -o 'EventType::[A-Za-z]*' "$addon" | sed 's/EventType:://' | sort -u)
+bad=$(grep -vxE "$allowed" <<<"$events" || true)
+if [[ -n $bad ]] || grep -qE 'KeyEvent|keyEvent|InputContextKey' "$addon"; then
+  echo "The addon handles events beyond focus and capabilities:" >&2
+  echo "${bad:-(key event types referenced)}" >&2
+  exit 1
+fi
+echo "addon events: $(tr '\n' ' ' <<<"$events")"

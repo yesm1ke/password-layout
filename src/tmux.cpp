@@ -143,12 +143,26 @@ std::vector<TmuxClient> parseTmuxClients(std::string_view output) {
     return clients;
 }
 
+namespace {
+
+// The client is preferably the server's own executable: after a tmux upgrade
+// it still speaks the protocol of the server that is running, which a newer
+// client from PATH refuses to do. Inside a user namespace, which the unit's
+// sandboxing creates, the kernel denies access to another process's exe link;
+// then tmux from PATH is the client, as before.
+std::string clientFor(pid_t server) {
+    std::string exe = "/proc/" + std::to_string(server) + "/exe";
+    return access(exe.c_str(), X_OK) == 0 ? exe : "tmux";
+}
+
+} // namespace
+
 std::string Tmux::socketOf(pid_t server) {
     if (auto known = sockets_.find(server); known != sockets_.end()) {
         return known->second;
     }
     for (const auto &socket : socketsInDirectory()) {
-        auto pid = runCommand({"tmux", "-S", socket, "display-message", "-p", "#{pid}"});
+        auto pid = runCommand({clientFor(server), "-S", socket, "display-message", "-p", "#{pid}"});
         if (pid && std::atoi(pid->c_str()) == server) {
             sockets_[server] = socket;
             return socket;
@@ -167,8 +181,9 @@ std::optional<Tmux::Answer> Tmux::ask(dev_t tty, pid_t windowPid,
     if (socket.empty()) {
         return std::nullopt;
     }
-    auto panes = runCommand({"tmux", "-S", socket, "list-panes", "-a", "-F", kTmuxPaneFormat});
-    auto clients = runCommand({"tmux", "-S", socket, "list-clients", "-F", kTmuxClientFormat});
+    std::string client = clientFor(*server);
+    auto panes = runCommand({client, "-S", socket, "list-panes", "-a", "-F", kTmuxPaneFormat});
+    auto clients = runCommand({client, "-S", socket, "list-clients", "-F", kTmuxClientFormat});
     if (!panes || !clients) {
         sockets_.erase(*server); // the server went away or restarted
         return std::nullopt;

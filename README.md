@@ -67,17 +67,45 @@ On Arch-based systems (Arch, Omarchy, …) install the package from the latest
 [release](https://github.com/yesm1ke/password-layout/releases):
 
 ```
-curl -LO https://github.com/yesm1ke/password-layout/releases/download/v0.5.0/password-layout-0.5.0-1-x86_64.pkg.tar.zst
-sudo pacman -U password-layout-0.5.0-1-x86_64.pkg.tar.zst
+curl -LO https://github.com/yesm1ke/password-layout/releases/latest/download/password-layout-x86_64.pkg.tar.zst
+sudo pacman -U password-layout-x86_64.pkg.tar.zst
 ```
 
 That is all. The service is enabled for every user by the package, and the
 install script starts it and restarts fcitx5 (so it loads the addon) in the
-sessions of users who are logged in; others get both at their next login. Up
-to 0.3.0 these were manual steps.
+sessions of users who are logged in; others get both at their next login.
 
-Download first: the package is not signed, and pacman insists on a signature
-when it is handed a URL, but not for a local file.
+To update, run the same two commands again. There are no automatic updates
+until the package is in the AUR; to hear about new versions, use "Watch →
+Custom → Releases" on GitHub.
+
+### Checking the package
+
+Releases are built from the tag by GitHub Actions, never on a personal machine,
+and every package can be checked in two independent ways.
+
+With the GitHub CLI, which confirms the file was built by this repository's
+release workflow:
+
+```
+gh attestation verify password-layout-x86_64.pkg.tar.zst -R yesm1ke/password-layout
+```
+
+With pacman itself: trust the release key once, and pacman verifies the
+signature on every install, so the URL can then be given to it directly:
+
+```
+sudo pacman-key --recv-keys 7C5242797972ED2923B944029AC95674831AE330
+sudo pacman-key --lsign-key 7C5242797972ED2923B944029AC95674831AE330
+sudo pacman -U https://github.com/yesm1ke/password-layout/releases/latest/download/password-layout-x86_64.pkg.tar.zst
+```
+
+The key is also in the repository, `packaging/arch/password-layout.asc`; it
+signs releases and nothing else. `SHA256SUMS` and its signature
+`SHA256SUMS.asc` are attached to every release as well. What the service and
+the addon can see is described in [SECURITY.md](SECURITY.md).
+
+### Other ways to install
 
 The attached package is built for x86_64. To build it yourself, on any
 architecture, use the recipe in `packaging/arch`:
@@ -114,12 +142,31 @@ Other targets: `make test`, and `make bench` for the measurements in
 
 ## Troubleshooting
 
+Start with `password-layout doctor`. It checks everything the project depends
+on and says what is wrong and what to do:
+
+```
+ok    Hyprland: layouts us,ru; Latin: us
+ok    terminal service: running
+ok    fcitx5: running, addon loaded
+warn  fcitx5-qt 5.1.15-1: Qt windows that open with a password field already focused (KeePassXC, the polkit prompt, possibly the lock screen) are not recognised until focus moves
+      -> fixed upstream in fcitx5-qt 5.1.16; update once your distribution ships it
+note  sudo 1.9.17p2 runs commands in a terminal of its own: sudo's password prompt is recognised, prompts of the programs it runs are not
+```
+
+It exits with 1 when something is broken. For more detail:
+
 - `password-layout status` — current layout, who holds Latin (`tty` for
   terminals, `im` for graphical applications), which terminals are at a prompt
   and whether one of them is in the focused window.
 - Every actual switch is logged, one line each way:
   `journalctl --user -u password-layout-tty` for terminals, the fcitx5 log for
   graphical applications (`journalctl --user -u omarchy-fcitx5` on Omarchy).
+- The service does not start (`systemctl --user status password-layout-tty`
+  shows it restarting): part of its sandboxing needs unprivileged user
+  namespaces, which some kernels (`linux-hardened`) turn off. Turn that part
+  off with an empty drop-in of the same name, then restart the service:
+  `mkdir -p ~/.config/systemd/user/password-layout-tty.service.d && touch ~/.config/systemd/user/password-layout-tty.service.d/sandbox-namespaces.conf`.
 - What fcitx5 knows about the focused field: `tools/fcitx-watch` from a
   checkout. For the addon's own debug output:
   `busctl --user call org.fcitx.Fcitx5 /controller org.fcitx.Fcitx.Controller1 SetLogRule s passwordlayout=5`.
@@ -157,6 +204,7 @@ fields costs at most one switch and a slow compositor cannot delay typing.
 | `watch-tty` | the service: watches terminals for password prompts |
 | `enter <who>` / `leave <who>` | for other sources: "Latin is needed" / "no longer needed" |
 | `status` | current layout, who is holding Latin, which terminals are at a prompt |
+| `doctor` | checks the setup and explains what is wrong |
 
 The terminal service and the addon hold Latin under separate names (`tty` and
 `im`). The layout that was active before the first of them asked for Latin is
@@ -166,7 +214,7 @@ restored after the last one lets go; it is kept in
 Source layout: `src/fcitx/` is the fcitx5 addon, `src/tty.*` recognises a prompt and finds the window that owns
 the terminal, `src/activity.*` waits for terminal output, `src/compositor.*`
 talks to Hyprland, `src/tmux.*` asks tmux about panes and clients,
-`src/state.*` tracks who holds Latin and what to restore,
+`src/state.*` tracks who holds Latin and what to restore, `src/doctor.*` checks the setup,
 `src/main.cpp` has the subcommands and the service loop.
 
 ## Limitations
@@ -203,6 +251,8 @@ in [BENCHMARKS.md](BENCHMARKS.md).
 - [STATUS.md](STATUS.md) — what is done, what was verified, what is next.
 - [BACKLOG.md](BACKLOG.md) — deferred problems.
 - [BENCHMARKS.md](BENCHMARKS.md) — resource use and how it was measured.
+- [CHANGELOG.md](CHANGELOG.md) — what changed in each release.
+- [SECURITY.md](SECURITY.md) — what it can see, and how to report a problem.
 
 ## License
 
