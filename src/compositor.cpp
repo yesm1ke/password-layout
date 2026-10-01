@@ -25,16 +25,44 @@ std::string requireEnv(const char *name) {
     throw std::system_error(errno, std::generic_category(), what);
 }
 
-} // namespace
-
-std::vector<long> jsonIntegers(std::string_view json, std::string_view key) {
+// Where the value of each `"key":` starts, in order of appearance.
+std::vector<size_t> valuesOf(std::string_view json, std::string_view key) {
     std::string needle = "\"" + std::string(key) + "\":";
-    std::vector<long> values;
+    std::vector<size_t> starts;
     for (size_t at = json.find(needle); at != std::string_view::npos; at = json.find(needle, at)) {
         at += needle.size();
         while (at < json.size() && json[at] == ' ') {
             ++at;
         }
+        starts.push_back(at);
+    }
+    return starts;
+}
+
+// A connected Unix stream socket, or -1 with errno set.
+int connectTo(const std::string &path, int flags) {
+    sockaddr_un address{};
+    address.sun_family = AF_UNIX;
+    if (path.size() >= sizeof(address.sun_path)) {
+        errno = ENAMETOOLONG;
+        return -1;
+    }
+    path.copy(address.sun_path, path.size());
+    int fd = socket(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC | flags, 0);
+    if (fd >= 0 && ::connect(fd, reinterpret_cast<sockaddr *>(&address), sizeof(address)) < 0) {
+        int saved = errno;
+        close(fd);
+        errno = saved;
+        return -1;
+    }
+    return fd;
+}
+
+} // namespace
+
+std::vector<long> jsonIntegers(std::string_view json, std::string_view key) {
+    std::vector<long> values;
+    for (size_t at : valuesOf(json, key)) {
         long value = 0;
         auto parsed = std::from_chars(json.data() + at, json.data() + json.size(), value);
         if (parsed.ec == std::errc()) {
@@ -45,13 +73,8 @@ std::vector<long> jsonIntegers(std::string_view json, std::string_view key) {
 }
 
 std::vector<std::string> jsonStrings(std::string_view json, std::string_view key) {
-    std::string needle = "\"" + std::string(key) + "\":";
     std::vector<std::string> values;
-    for (size_t at = json.find(needle); at != std::string_view::npos; at = json.find(needle, at)) {
-        at += needle.size();
-        while (at < json.size() && json[at] == ' ') {
-            ++at;
-        }
+    for (size_t at : valuesOf(json, key)) {
         if (at >= json.size() || json[at] != '"') {
             continue;
         }
@@ -142,16 +165,9 @@ Hyprland::Hyprland()
                   requireEnv("HYPRLAND_INSTANCE_SIGNATURE") + "/.socket.sock") {}
 
 std::string Hyprland::request(std::string_view command) const {
-    sockaddr_un address{};
-    address.sun_family = AF_UNIX;
-    if (socketPath_.size() >= sizeof(address.sun_path)) {
-        throw std::runtime_error("Hyprland socket path is too long");
-    }
-    socketPath_.copy(address.sun_path, socketPath_.size());
-
-    int fd = socket(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC, 0);
+    int fd = connectTo(socketPath_, 0);
     if (fd < 0) {
-        fail("socket");
+        fail("connect to Hyprland");
     }
     std::string reply;
     try {
@@ -160,9 +176,6 @@ std::string Hyprland::request(std::string_view command) const {
         timeval timeout{1, 0};
         setsockopt(fd, SOL_SOCKET, SO_RCVTIMEO, &timeout, sizeof(timeout));
         setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, &timeout, sizeof(timeout));
-        if (connect(fd, reinterpret_cast<sockaddr *>(&address), sizeof(address)) < 0) {
-            fail("connect to Hyprland");
-        }
         // MSG_NOSIGNAL: a compositor that closes the socket first must not
         // kill the service with SIGPIPE.
         if (send(fd, command.data(), command.size(), MSG_NOSIGNAL) < 0) {
@@ -227,17 +240,7 @@ HyprlandEvents::~HyprlandEvents() {
 }
 
 void HyprlandEvents::connect() {
-    sockaddr_un address{};
-    address.sun_family = AF_UNIX;
-    if (socketPath_.size() >= sizeof(address.sun_path)) {
-        return;
-    }
-    socketPath_.copy(address.sun_path, socketPath_.size());
-    fd_ = socket(AF_UNIX, SOCK_STREAM | SOCK_CLOEXEC | SOCK_NONBLOCK, 0);
-    if (fd_ >= 0 && ::connect(fd_, reinterpret_cast<sockaddr *>(&address), sizeof(address)) < 0) {
-        close(fd_);
-        fd_ = -1;
-    }
+    fd_ = connectTo(socketPath_, SOCK_NONBLOCK);
     partial_.clear();
 }
 

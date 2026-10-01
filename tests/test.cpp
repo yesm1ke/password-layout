@@ -415,7 +415,6 @@ void terminalOutputNamesTheTerminal() {
     std::string path = terminalOf(child);
     activity.drain();
     CHECK(activity.takeActive().contains(path));
-    CHECK(activity.all().contains(path));
 
     bool printed = false;
     for (Deadline deadline(5000); !printed && !deadline.passed();) {

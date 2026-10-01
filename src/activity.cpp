@@ -100,11 +100,3 @@ std::set<std::string> TtyActivity::takeActive() {
     taken.swap(active_);
     return taken;
 }
-
-std::set<std::string> TtyActivity::all() const {
-    std::set<std::string> paths;
-    for (const auto &[descriptor, path] : watched_) {
-        paths.insert(path);
-    }
-    return paths;
-}
