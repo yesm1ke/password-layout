@@ -140,6 +140,30 @@ password-layout doctor     # says what is still missing
 To turn it off: `systemctl --user disable --now password-layout-tty`. The
 fcitx5 addon is unloaded when fcitx5 restarts after the package is removed.
 
+## From your own scripts
+
+For a password prompt the project does not recognise by itself, a script can
+hold Latin for as long as it needs:
+
+```
+password-layout enter my-prompt              # Latin now, unless a Latin layout is active
+trap 'password-layout leave my-prompt' EXIT  # always give it back
+systemd-ask-password "Disk password:"        # anything that asks for a secret
+```
+
+- `enter <name>` switches at once, wherever focus is: unlike the terminal
+  service, it does not check which window the prompt is in.
+- The layout from before comes back after the last holder leaves, the
+  service's own (`tty`, `im`) included. A name is lowercase letters, digits
+  and `-`, up to 32 characters; `password-layout status` lists who holds Latin.
+- A holder that is never given back keeps Latin until `leave` or the end of
+  the session, so always pair `enter` with `leave`, as the `trap` above does.
+
+Useful for the cases in [#9](https://github.com/yesm1ke/password-layout/issues/9)
+(prompts that draw asterisks), a lock-screen hook while
+[#7](https://github.com/yesm1ke/password-layout/issues/7) is open, or just to
+check that switching works.
+
 ## Troubleshooting
 
 Start with `password-layout doctor`. It checks everything the project depends
