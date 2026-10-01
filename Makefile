@@ -22,6 +22,12 @@ VERSION := 0.6.1
 # The fcitx5 addon (password fields in graphical applications) is built when
 # fcitx5's development files are present, and skipped otherwise.
 FCITX_VERSION := $(shell pkg-config --modversion Fcitx5Core 2>/dev/null)
+# The fcitx5 the addon asks for: the major.minor series it was built against,
+# not the exact release. fcitx5 silently skips an addon that asks for a newer
+# core than it is, so 5.1.23 here kept a package built on an up-to-date machine
+# from loading under 5.1.22. Within a series the ABI holds (a break changes the
+# soname of libFcitx5Core, which keeps the library from loading at all).
+FCITX_REQUIRES := $(if $(FCITX_VERSION),$(word 1,$(subst ., ,$(FCITX_VERSION))).$(word 2,$(subst ., ,$(FCITX_VERSION))).0)
 ADDON := $(if $(FCITX_VERSION),build/libpasswordlayout.so)
 ADDON_LIBDIR := $(PREFIX)/lib/fcitx5
 ADDON_CONFDIR := $(PREFIX)/share/fcitx5/addon
@@ -49,7 +55,7 @@ build/libpasswordlayout.so: src/fcitx/passwordlayout.cpp src/compositor.cpp src/
 # its own addon directory, an absolute path is used as is.
 build/system/passwordlayout.conf build/user/passwordlayout.conf: src/fcitx/passwordlayout.conf.in
 	@mkdir -p $(dir $@)
-	sed -e 's|@VERSION@|$(VERSION)|' -e 's|@FCITX_VERSION@|$(FCITX_VERSION)|' \
+	sed -e 's|@VERSION@|$(VERSION)|' -e 's|@FCITX_VERSION@|$(FCITX_REQUIRES)|' \
 		-e 's|@LIBRARY@|$(if $(findstring user,$@),$(USER_ADDON_LIBDIR)/libpasswordlayout,libpasswordlayout)|' \
 		$< > $@
 
