@@ -57,8 +57,11 @@ never a leaked character.
 
 ## Verifying a release
 
-There is no release at the moment; releases are being reworked
-([#26](https://github.com/yesm1ke/password-layout/issues/26)). Build from a checkout and read the code you build.
+Releases are built from a tag by this repository's GitHub Actions. Each
+package has a build attestation and a GPG signature with a key used for
+nothing else; both say the same thing, that the package came from that
+workflow. How to check them, without adding the key to pacman's keyring, is in
+the README under "Install". Or build from a checkout and read what you build.
 
 ## Reporting a problem
 
