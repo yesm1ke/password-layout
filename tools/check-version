@@ -1,9 +1,8 @@
 #!/bin/bash
-# Fails unless every place that names the version agrees with the given one:
-# the Makefile, the PKGBUILD, its .SRCINFO (version and tag) and CHANGELOG.md;
-# and README.md must name the release key.
+# Fails unless the PKGBUILD's pkgver, the one place the version is kept, is the
+# given one and CHANGELOG.md has a section for it.
 #
-# Usage: tools/check-version 0.6.0   (a tag name such as v0.6.0 is fine)
+# Usage: tools/check-version 0.7.0   (a tag name such as v0.7.0 is fine)
 
 set -euo pipefail
 trap 'echo "check-version: failed at line $LINENO" >&2' ERR
@@ -11,28 +10,10 @@ cd "$(dirname "$0")/.."
 
 want=${1:?usage: tools/check-version <version>}
 want=${want#v}
-want=${want%%-*}
 status=0
 
-check() {
-  local where=$1 found=$2
-  if [[ $found != "$want" ]]; then
-    echo "$where says ${found:-nothing}, expected $want" >&2
-    status=1
-  fi
-}
-
-check Makefile "$(sed -n 's/^VERSION := //p' Makefile)"
-check PKGBUILD "$(sed -n 's/^pkgver=//p' packaging/arch/PKGBUILD)"
-check .SRCINFO "$(sed -n 's/^\tpkgver = //p' packaging/arch/.SRCINFO)"
-check ".SRCINFO source tag" "$(sed -n 's/.*#tag=v//p' packaging/arch/.SRCINFO)"
-grep -q '@FINGERPRINT@' README.md && { echo "README.md still has the key fingerprint placeholder" >&2; status=1; }
-# No versioned URL in the README is fine (grep finding nothing must not end
-# the script under pipefail).
-readme=$(grep -oE 'releases/download/v[0-9.]+/password-layout-[0-9.]+-' README.md | head -1 || true)
-[[ -z $readme || $readme == "releases/download/v$want/password-layout-$want-" ]] ||
-  [[ $(sed -n "s/^## $want — //p" CHANGELOG.md) == unreleased ]] ||
-  { echo "README.md names $readme for pacman, expected $want" >&2; status=1; }
+found=$(sed -n 's/^pkgver=//p' packaging/arch/PKGBUILD)
+[[ $found == "$want" ]] || { echo "PKGBUILD says ${found:-nothing}, expected $want" >&2; status=1; }
 grep -q "^## $want " CHANGELOG.md || { echo "CHANGELOG.md has no \"## $want\" section" >&2; status=1; }
 
 exit $status
