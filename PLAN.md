@@ -71,7 +71,7 @@ Left in this stage:
    one of a session that a client inside the focused window shows. tmux is asked
    again only when a client's terminal redraws, which is what switching panes or
    windows looks like from outside. zellij and screen are not handled.
-3. Prompts that draw asterisks — deferred, see BACKLOG.md.
+3. Prompts that draw asterisks — deferred, [#9](https://github.com/yesm1ke/password-layout/issues/9).
 
 ## Stage 2. Survey of graphical applications
 
@@ -129,7 +129,7 @@ of the browser itself, or an extension that reports focus on
 ## Known risks
 
 - A silent prompt (echo turned off with no output at all) is not recognised —
-  see [BACKLOG.md](BACKLOG.md).
+  [#6](https://github.com/yesm1ke/password-layout/issues/6).
 - The terminal heuristic misfires for programs that keep a terminal in "echo
   off, line input on" themselves — an Emacs shell buffer, for instance.
 - `sudo` on a remote machine inside `ssh` is not recognised: the local terminal

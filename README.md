@@ -40,8 +40,9 @@ reading the keyboard.
   Ghostty and foot); there is no list of supported terminals.
 - **Browsers**: password fields in Zen (Firefox-based) and Chromium, through an
   addon for the fcitx5 input method. Other applications work if they mark their
-  password fields for the input method, as these browsers do; Qt applications
-  are not surveyed yet.
+  password fields for the input method, as these browsers do. Qt applications
+  do too, with one bug in fcitx5-qt ([#7](https://github.com/yesm1ke/password-layout/issues/7)); Electron password managers are
+  not checked yet ([#8](https://github.com/yesm1ke/password-layout/issues/8)).
 
 The scope is deliberately narrow: one person at a real keyboard in a Hyprland
 session. Virtual consoles, the boot and disk-unlock screens, remote machines and
@@ -121,7 +122,7 @@ cd password-layout/packaging/arch
 makepkg -si
 ```
 
-The package is not in the AUR yet; see [BACKLOG.md](BACKLOG.md).
+The package is not in the AUR yet ([#11](https://github.com/yesm1ke/password-layout/issues/11)).
 
 From a checkout, for the current user only (no root needed):
 
@@ -186,7 +187,7 @@ keeps both on. macOS Ghostty uses the same heuristic for its secure input.
 The service does not poll. It sleeps until the kernel reports, through inotify,
 that some terminal printed something, and then checks the mode of only the
 terminals that printed. A prompt nearly always prints its text, so this is
-enough; the one exception is described in [BACKLOG.md](BACKLOG.md).
+enough; the one exception is [#6](https://github.com/yesm1ke/password-layout/issues/6).
 
 The layout is switched only if the prompting terminal belongs to the focused
 window, which is decided by walking the process tree from the terminal up to the
@@ -230,16 +231,16 @@ talks to Hyprland, `src/tmux.*` asks tmux about panes and clients,
   the focused window counts, one in a background pane or window does not.
 - **Prompts that draw their own asterisks** (`systemd-ask-password`, `sudo` with
   `pwfeedback`) turn line input off as well and look like any full-screen
-  program.
+  program. See [#9](https://github.com/yesm1ke/password-layout/issues/9).
 - **`sudo` on a remote machine inside `ssh`**: the local terminal is in raw mode
   at that point. The password prompt of `ssh` itself is recognised.
 - **Silent prompts**: echo turned off with no output at all around that moment.
-  See [BACKLOG.md](BACKLOG.md).
+  See [#6](https://github.com/yesm1ke/password-layout/issues/6).
 - **Prompts of programs run under `sudo`**: current `sudo` runs the command in
   a pseudo-terminal of its own, owned by root, which an unprivileged service
   cannot inspect. The password prompt of `sudo` itself is recognised; a prompt
   shown by what it runs (`sudo ssh …`, a pacman hook that calls `ssh`, a root
-  shell from `sudo -i`) is not. See [BACKLOG.md](BACKLOG.md).
+  shell from `sudo -i`) is not. See [#10](https://github.com/yesm1ke/password-layout/issues/10).
 - Programs that keep a terminal in "echo off, line input on" for their own
   reasons, such as an Emacs shell buffer, look like a prompt.
 
@@ -254,10 +255,12 @@ in [BENCHMARKS.md](BENCHMARKS.md).
 
 - [PLAN.md](PLAN.md) — stages and the decisions behind them.
 - [STATUS.md](STATUS.md) — what is done, what was verified, what is next.
-- [BACKLOG.md](BACKLOG.md) — deferred problems.
+- [Issues](https://github.com/yesm1ke/password-layout/issues) — known limitations and
+  deferred work, one issue each (label `limitation`).
 - [BENCHMARKS.md](BENCHMARKS.md) — resource use and how it was measured.
 - [CHANGELOG.md](CHANGELOG.md) — what changed in each release.
 - [SECURITY.md](SECURITY.md) — what it can see, and how to report a problem.
+- [CONTRIBUTING.md](CONTRIBUTING.md) — reporting problems, building, testing.
 
 ## License
 
