@@ -3,7 +3,7 @@
 What changed for someone who installs the package. The day-to-day record is in
 [STATUS.md](STATUS.md).
 
-## 0.6.0 — unreleased
+## 0.6.0 — 2026-10-01
 
 - Releases are built, tested and published by GitHub Actions from the tag,
   instead of on the developer's machine.

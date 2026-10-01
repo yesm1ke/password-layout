@@ -17,7 +17,7 @@ UNIT := password-layout-tty.service
 # be turned off alone (see the file).
 DROPIN := $(UNIT).d/sandbox-namespaces.conf
 
-VERSION := 0.5.0
+VERSION := 0.6.0
 
 # The fcitx5 addon (password fields in graphical applications) is built when
 # fcitx5's development files are present, and skipped otherwise.
