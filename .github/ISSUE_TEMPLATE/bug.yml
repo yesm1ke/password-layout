@@ -1,3 +1,6 @@
+# GitHub rejects the whole form if a field label contains a word such as
+# "password" (it keeps credentials out of public issues), so the labels below
+# avoid it; descriptions may use it.
 name: Something does not switch, or switches wrongly
 description: The layout stays non-Latin at a password prompt, or changes where it should not.
 labels: [bug]
@@ -13,8 +16,8 @@ body:
   - type: textarea
     id: doctor
     attributes:
-      label: Output of password-layout doctor
-      description: Run it in the same session. It contains no passwords.
+      label: Doctor output
+      description: "The output of `password-layout doctor`, run in the same session. It contains no secrets."
       render: text
     validations:
       required: true
@@ -29,8 +32,9 @@ body:
   - type: input
     id: version
     attributes:
-      label: password-layout version
-      placeholder: "pacman -Q password-layout"
+      label: Version
+      description: "`pacman -Q password-layout`, or the commit when built from a checkout."
+      placeholder: "password-layout 0.6.2-1"
   - type: textarea
     id: log
     attributes:
