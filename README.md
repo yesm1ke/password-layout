@@ -1,5 +1,6 @@
 # password-layout
 
+[![Release](https://img.shields.io/github/v/release/yesm1ke/password-layout)](https://github.com/yesm1ke/password-layout/releases/latest)
 [![CI](https://github.com/yesm1ke/password-layout/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/yesm1ke/password-layout/actions/workflows/ci.yml)
 [![For Hyprland, fcitx5, Arch](https://img.shields.io/badge/for-Hyprland%20%C2%B7%20fcitx5%20%C2%B7%20Arch-blue)](#requirements)
 [![License: MIT](https://img.shields.io/github/license/yesm1ke/password-layout)](LICENSE)
@@ -68,10 +69,41 @@ installed and running as the input method. Only Omarchy has been tested so far.
 
 ## Install
 
-There is no release to download at the moment. The releases up to 0.6.2 were
-withdrawn on 2026-10-01 after the history was rewritten
-([#27](https://github.com/yesm1ke/password-layout/issues/27)); the next one, 0.7.0, will be built and published by the new CI
-([#36](https://github.com/yesm1ke/password-layout/issues/36)). Until then, build from a checkout.
+### From a release (Arch-based systems)
+
+```
+curl -LO https://github.com/yesm1ke/password-layout/releases/latest/download/password-layout-x86_64.pkg.tar.zst
+sudo pacman -U password-layout-x86_64.pkg.tar.zst
+```
+
+Then turn it on (below). To update, run the same two commands again. Give
+pacman the downloaded file, not the URL: pacman caches downloads by file name
+and would reinstall the old one.
+
+Checking the package first is optional. Releases are built by this
+repository's GitHub Actions from a tag; either check confirms that, and both
+confirm the same thing:
+
+```
+gh attestation verify password-layout-x86_64.pkg.tar.zst -R yesm1ke/password-layout
+```
+
+```
+curl -LO https://github.com/yesm1ke/password-layout/releases/latest/download/password-layout-x86_64.pkg.tar.zst.sig
+gpg --keyserver hkps://keyserver.ubuntu.com --recv-keys 7C5242797972ED2923B944029AC95674831AE330
+gpg --verify password-layout-x86_64.pkg.tar.zst.sig
+```
+
+The key (also in `packaging/arch/password-layout.asc`) signs releases and
+nothing else. Do not add it to pacman's keyring: pacman would then trust it
+for any package.
+
+The fcitx5 addon in a release is built against the fcitx5 Arch had at that
+time. If fcitx5 changes in a way that keeps the addon from loading,
+`password-layout doctor` says so; a newer release or a build from a checkout
+fixes it. The package is not in the AUR yet ([#11](https://github.com/yesm1ke/password-layout/issues/11)).
+
+### From a checkout
 
 For the current user only (no root needed):
 
@@ -90,8 +122,12 @@ sudo make PREFIX=/usr install
 ```
 
 `make install` only puts files in place (it honours `DESTDIR` and `PREFIX`).
-The recipe in `packaging/arch` builds from a release tag, so it works again
-with 0.7.0; the package is not in the AUR yet ([#11](https://github.com/yesm1ke/password-layout/issues/11)).
+To build the Arch package yourself, from the latest release tag:
+`cd packaging/arch && makepkg -si`. Other targets: `make test`, and
+`make bench` for the measurements in [BENCHMARKS.md](BENCHMARKS.md).
+
+### Turning it on and off
+
 Installing enables nothing, as usual on Arch. Each user turns the service on
 and restarts fcitx5 so it loads the addon (`make install-user` does the first
 part itself):
@@ -103,9 +139,6 @@ password-layout doctor     # says what is still missing
 
 To turn it off: `systemctl --user disable --now password-layout-tty`. The
 fcitx5 addon is unloaded when fcitx5 restarts after the package is removed.
-
-Other targets: `make test`, and `make bench` for the measurements in
-[BENCHMARKS.md](BENCHMARKS.md).
 
 ## Troubleshooting
 
