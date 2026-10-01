@@ -67,6 +67,11 @@ public:
 
 private:
     void run() {
+        // A previous fcitx5 that died while a password field had focus left
+        // "im" in the shared state, and while it is there the terminal service
+        // cannot switch either. Give it back first, on this thread like every
+        // other call that reaches the compositor.
+        apply(false);
         bool applied = false;
         std::unique_lock lock(mutex_);
         for (;;) {
