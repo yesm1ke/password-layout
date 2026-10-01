@@ -14,9 +14,10 @@ Updated with every change. The stages are described in [PLAN.md](PLAN.md).
 
 Plan agreed on 2026-10-01: security, ease of use, releases built by CI.
 
-1. Release pipeline (in progress, see the journal): the maintainer runs
-   `tools/setup-release-key`, then 0.5.1 goes out through `tools/release` as
-   the first release built, signed and attested by GitHub Actions.
+1. Release pipeline (in progress on the `release-pipeline` branch, see the
+   journal): the release key exists; after the merge into main, 0.5.1 goes out
+   through `tools/release` as the first release built, signed and attested by
+   GitHub Actions.
 2. Service and code hardening → 0.6.0: systemd sandboxing of the user unit
    (checked with `systemd-analyze --user security` and live), holder names
    limited to `[a-z0-9-]`, external commands by absolute path.
@@ -455,3 +456,13 @@ GPG signature and a GitHub build attestation.
   fcitx5 comes with a new soname, which keeps an old addon from loading rather
   than crashing fcitx5, while a version pin would block fcitx5 updates for
   the whole system.
+
+#### Release key
+
+The maintainer ran `tools/setup-release-key`: key
+`7C5242797972ED2923B944029AC95674831AE330` (ed25519, signing only, expires
+2029-09-30), the `release` environment limited to `v*` tags with the two
+secrets, the public key in `packaging/arch/password-layout.asc`. Checked:
+`gpg --recv-keys` of the full fingerprint from keyserver.ubuntu.com imports it
+(a lookup by the short id answers "Not Found"; the README uses the full one).
+The work stays on the `release-pipeline` branch until it is ready for main.

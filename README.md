@@ -95,8 +95,8 @@ With pacman itself: trust the release key once, and pacman verifies the
 signature on every install, so the URL can then be given to it directly:
 
 ```
-sudo pacman-key --recv-keys @FINGERPRINT@
-sudo pacman-key --lsign-key @FINGERPRINT@
+sudo pacman-key --recv-keys 7C5242797972ED2923B944029AC95674831AE330
+sudo pacman-key --lsign-key 7C5242797972ED2923B944029AC95674831AE330
 sudo pacman -U https://github.com/yesm1ke/password-layout/releases/latest/download/password-layout-x86_64.pkg.tar.zst
 ```
 
