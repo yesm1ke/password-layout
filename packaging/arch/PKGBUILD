@@ -9,6 +9,8 @@ url="https://github.com/yesm1ke/password-layout"
 license=('MIT')
 depends=('gcc-libs' 'glibc' 'hyprland' 'fcitx5')
 makedepends=('git')
+# The tests start a private tmux server.
+checkdepends=('tmux')
 install=password-layout.install
 # Built from the release tag. A tarball checksum cannot live in the same commit
 # that the tag points at, so the tag itself is the pin.

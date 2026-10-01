@@ -6,6 +6,19 @@ What changed for someone who installs the package. The day-to-day record is in
 The releases below, up to 0.6.2, were withdrawn on 2026-10-01: the history was
 rewritten and they no longer match it. Their entries stay as a record.
 
+## 0.7.0 — unreleased
+
+- Fixed: if fcitx5 died while a password field had focus, terminal prompts
+  stopped switching the layout until the next login. fcitx5 now clears its
+  leftover on start.
+- Fixed: a restarting Hyprland could kill the terminal service; a hung one
+  could hang it, and fcitx5's exit with it. Requests now time out after a
+  second.
+- Fixed: a half-written state file could restore the first layout instead of
+  yours. The state is written atomically and read strictly.
+- The layout list comes from what most keyboards have, not from whichever
+  device Hyprland lists first.
+
 ## 0.6.2 — 2026-10-01
 
 - Fixed: the fcitx5 addon from the 0.6.1 package asked for fcitx5 5.1.23, the

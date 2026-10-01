@@ -662,3 +662,23 @@ passed on it. `ci.yml` also fails on any commit e-mail other than the GitHub
 no-reply ones, without printing the address (#18). Checked locally: the
 `git+file://…#commit=` source with `makepkg -o`; the rest on this pull request.
 
+#### Bugs #20–#24 (milestone 2)
+
+- #20: the addon's worker leaves "im" before anything else, so a fcitx5 that
+  died with a password field focused no longer blocks terminal switching.
+- #21: `send(MSG_NOSIGNAL)` for Hyprland requests. fcitx5 itself already
+  ignores SIGPIPE (SigIgn of the running process), so the service was the one
+  at risk.
+- #22: the state and last-Latin files are written through a temporary file
+  and `rename()`; a malformed line means no state.
+- #23: one-second send/receive timeout on Hyprland requests; the layout list
+  from the majority of keyboards. Hyprland's `main` keyboard was considered
+  and rejected: on the development machine it is `sleep-button`.
+- #24: `checkdepends=('tmux')`.
+
+Tests: 30 (stale holder sequence, broken state files, majority layouts, a
+silent compositor). Mutation checks: the old `state.cpp` fails the broken-file
+test; without `SO_RCVTIMEO` the silent-compositor test hangs. Live: `doctor`
+and `status` read the layouts as before. Not checked live: an actual fcitx5
+crash and restart, a Hyprland restart.
+
