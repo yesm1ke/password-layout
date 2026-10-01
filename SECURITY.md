@@ -11,8 +11,10 @@ without reading the code.
 three fcitx5 events: a field gained focus, lost focus, or changed its
 capability flags. From them it learns one fact: whether the focused field is a
 password field. It does not subscribe to key events, so it never sees what you
-type. `tools/check-addon-events` checks this on every release, and the release
-fails if the addon starts listening to anything else.
+type. `tools/check-addon-events`, run by CI on every change, fails if the
+addon's source names any other event type or a key event. It is a guard
+against an accidental change, not a proof: read
+`src/fcitx/passwordlayout.cpp` (about 160 lines) to check for yourself.
 
 **The terminal service** (`password-layout watch-tty`) reads, for terminals that
 just printed something:
