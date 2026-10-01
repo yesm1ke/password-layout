@@ -631,3 +631,22 @@ Standards page ticks "Issue templates". The REST community profile still
 reports `issue_template: null`; it seems to look only for a single legacy
 ISSUE_TEMPLATE.md file.
 
+#### Badges; a guide for agents
+
+README badges: the latest release (shields.io), the release workflow (GitHub's
+own badge; checked that it reports the last tag run, "passing"), a static
+"GPG signed + attested" linking to "Checking the package", a static
+"Hyprland · fcitx5 · Arch" linking to "Requirements", and the licence. Left out
+on purpose: test coverage (an external service, recomputed only on releases,
+and most of the code talks to the live system), OpenSSF Scorecard (needs a
+scheduled workflow, CI here is tag-only), SLSA level (a claim nothing checks),
+download and star counts.
+
+AGENTS.md: what the project is, a map of the code, build and test commands
+(environment CXXFLAGS, `env -u TERM`), how to check on a live desktop, the
+rules that are easy to break (no key events in the addon, no network,
+`switchxkblayout all`, holder names, the namespace drop-in, the fcitx5 series
+dependency, words GitHub forbids in issue form labels), the branch and STATUS
+workflow, and releases. CLAUDE.md imports it (`@AGENTS.md`) so there is one
+text; README and CONTRIBUTING link to it.
+

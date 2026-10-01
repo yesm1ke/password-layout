@@ -1,5 +1,11 @@
 # password-layout
 
+[![Release](https://img.shields.io/github/v/release/yesm1ke/password-layout)](https://github.com/yesm1ke/password-layout/releases/latest)
+[![Release workflow](https://github.com/yesm1ke/password-layout/actions/workflows/release.yml/badge.svg)](https://github.com/yesm1ke/password-layout/actions/workflows/release.yml)
+[![Verified releases](https://img.shields.io/badge/releases-GPG%20signed%20%2B%20attested-brightgreen)](#checking-the-package)
+[![For Hyprland, fcitx5, Arch](https://img.shields.io/badge/for-Hyprland%20%C2%B7%20fcitx5%20%C2%B7%20Arch-blue)](#requirements)
+[![License: MIT](https://img.shields.io/github/license/yesm1ke/password-layout)](LICENSE)
+
 Makes typing a password painless when you write in more than one language:
 while you type a password the keyboard layout is Latin. If the current layout is
 not Latin, the one you used last is switched to, and your layout comes back when
@@ -261,6 +267,8 @@ in [BENCHMARKS.md](BENCHMARKS.md).
 - [CHANGELOG.md](CHANGELOG.md) — what changed in each release.
 - [SECURITY.md](SECURITY.md) — what it can see, and how to report a problem.
 - [CONTRIBUTING.md](CONTRIBUTING.md) — reporting problems, building, testing.
+- [AGENTS.md](AGENTS.md) — a working guide to the repository for coding agents
+  and new contributors.
 
 ## License
 
