@@ -6,7 +6,7 @@ What changed for someone who installs the package. The day-to-day record is in
 The releases below, up to 0.6.2, were withdrawn on 2026-10-01: the history was
 rewritten and they no longer match it. Their entries stay as a record.
 
-## 0.7.0 — unreleased
+## 0.7.0 — 2026-10-01
 
 - Fixed: if fcitx5 died while a password field had focus, terminal prompts
   stopped switching the layout until the next login. fcitx5 now clears its
