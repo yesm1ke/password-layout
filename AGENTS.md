@@ -26,7 +26,7 @@ Hyprland and restores the old layout after the last holder leaves.
 | `src/tty.*` | prompt detection by terminal mode; process tree; which window owns a pty |
 | `src/activity.*` | inotify on `/dev/pts` and `/dev/tty`: wakes the service only when terminals print |
 | `src/tmux.*` | asks tmux which pane is visible in which client |
-| `src/compositor.*` | Hyprland socket: layouts, switching, focused window; minimal JSON reading |
+| `src/compositor.*` | Hyprland socket: layouts, switching, focused window; minimal JSON reading; which layouts are Latin (measured tables, `tests/xkb-latin.tsv`, `tools/xkb-latin.c`) |
 | `src/state.*` | holders (`tty`, `im`) and the layout to restore, in `$XDG_RUNTIME_DIR/password-layout/` |
 | `src/doctor.*` | `password-layout doctor`: checks the setup, explains problems |
 | `src/fcitx/` | the fcitx5 addon (`libpasswordlayout.so`) and its description template |

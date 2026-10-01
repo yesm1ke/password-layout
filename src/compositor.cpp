@@ -105,12 +105,45 @@ std::vector<std::string> splitCommas(std::string_view text) {
     }
 }
 
-bool isNonLatin(const std::string &layout, const std::string &variant) {
+// Whether a layout types Latin letters, measured rather than guessed: every
+// layout and variant of xkeyboard-config 2.48 was compiled with libxkbcommon
+// and counts as Latin if its base level types at least 20 of the 26 letters
+// a-z (tools/xkb-latin.c; the result is tests/xkb-latin.tsv, which the tests
+// check this against). Esperanto or Azerbaijani, a few letters short, stay
+// Latin; a script with a stray Latin letter does not. Rerun the tool when
+// xkeyboard-config gains layouts.
+bool isLatin(const std::string &layout, const std::string &variant) {
+    // Layouts whose base form types no Latin.
     static const std::string nonLatin =
-        " af am ara bd bg by et ge gr il in iq ir kg kh kz la lk mk mm mn mv np rs ru sy th "
-        "tj ua ";
-    return nonLatin.find(" " + layout + " ") != std::string::npos &&
-           variant.find("latin") == std::string::npos;
+        " af am ara bd bg brai bt by eg et ge gn gr il in iq ir kg kh kz la lk ma mk mm mn "
+        "mv my np pk rs ru sy th tj tz ua uz ";
+    // Variants that differ from their layout, beyond those named *latin*.
+    static const std::string latinVariants =
+        " in(eng) in(mara) iq(ku) iq(ku_alt) iq(ku_f) ir(ku) ir(ku_alt) ir(ku_f) lk(us) "
+        "ma(french) ma(rif) mm(mara) ru(ruchey_en) sy(ku) sy(ku_alt) sy(ku_f) ua(crh) "
+        "ua(crh_alt) ua(crh_f) ";
+    static const std::string nonLatinVariants =
+        " al(veqilharxhi) az(cyrillic) br(rus) ca(ike) cn(mon_manchu_galik) cn(mon_todo_galik) "
+        "cn(mon_trad) cn(mon_trad_galik) cn(mon_trad_manchu) cn(mon_trad_todo) "
+        "cn(mon_trad_xibe) cn(tib) cn(tib_asciinum) cn(ug) cz(rus) cz(ucw) de(ru) dz(ar) "
+        "dz(ber) fr(geo) id(javanese) id(melayu-phonetic) id(melayu-phoneticx) "
+        "id(pegon-phonetic) ie(ogam) it(geo) jp(kana) jp(mac) lv(modern-cyr) me(cyrillic) "
+        "me(cyrillicalternatequotes) me(cyrillicyz) ph(capewell-dvorak-bay) "
+        "ph(capewell-qwerf2k6-bay) ph(colemak-bay) ph(dvorak-bay) ph(qwerty-bay) "
+        "pl(ru_phonetic_dvorak) se(rus) se(swl) us(chr) us(rus) ";
+    auto listed = [](const std::string &list, const std::string &name) {
+        return list.find(" " + name + " ") != std::string::npos;
+    };
+    if (!variant.empty()) {
+        std::string named = layout + "(" + variant + ")";
+        if (listed(nonLatinVariants, named)) {
+            return false;
+        }
+        if (listed(latinVariants, named) || variant.find("latin") != std::string::npos) {
+            return true;
+        }
+    }
+    return !listed(nonLatin, layout);
 }
 
 } // namespace
@@ -121,7 +154,7 @@ std::vector<bool> latinLayouts(std::string_view layouts, std::string_view varian
     std::vector<bool> latin;
     for (size_t index = 0; index < names.size(); ++index) {
         latin.push_back(!names[index].empty() &&
-                        !isNonLatin(names[index], index < kinds.size() ? kinds[index] : ""));
+                        isLatin(names[index], index < kinds.size() ? kinds[index] : ""));
     }
     return latin;
 }

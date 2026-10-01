@@ -232,6 +232,30 @@ void latinLayoutsAreFoundByName() {
     CHECK((latinLayouts("", "") == std::vector<bool>{false}));
 }
 
+void layoutsAreLatinAsMeasured() {
+    // tests/xkb-latin.tsv: every xkeyboard-config layout and how many letters
+    // a-z its base level types (tools/xkb-latin.c). Latin means at least 20.
+    std::ifstream table("tests/xkb-latin.tsv");
+    CHECK(table.good());
+    std::string line;
+    int checked = 0;
+    while (std::getline(table, line)) {
+        auto tab = line.find('\t');
+        std::string name = line.substr(0, tab);
+        bool measured = std::stoi(line.substr(tab + 1)) >= 20;
+        auto open = name.find('(');
+        std::string layout = name.substr(0, open);
+        std::string variant = open == std::string::npos ? "" : name.substr(open + 1, name.size() - open - 2);
+        auto latin = latinLayouts(layout, variant);
+        if (latin.size() != 1 || latin[0] != measured) {
+            std::printf("    %s: measured %s\n", name.c_str(), measured ? "Latin" : "not Latin");
+            ++failures;
+        }
+        ++checked;
+    }
+    CHECK(checked > 500);
+}
+
 void jsonStringsAreUnescaped() {
     std::string devices = R"({"keyboards": [
         {"name": "a \"layout\": no", "layout": "ru,us", "variant": ",", "active_layout_index": 0},
@@ -556,6 +580,7 @@ int main() {
         {"state ignores a remembered layout that is gone", stateIgnoresARememberedLayoutThatIsGone},
         {"Latin layouts are found by name", latinLayoutsAreFoundByName},
         {"JSON strings are unescaped", jsonStringsAreUnescaped},
+        {"layouts are Latin as measured", layoutsAreLatinAsMeasured},
         {"silent read is a prompt owned by us", silentReadIsAPromptOwnedByUs},
         {"plain input is not a prompt", plainInputIsNotAPrompt},
         {"terminal output names the terminal", terminalOutputNamesTheTerminal},
