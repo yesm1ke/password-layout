@@ -534,3 +534,32 @@ no network requests.
 - Private vulnerability reporting is on (SECURITY.md points to it).
 - No ruleset for main: not asked for yet; force-pushes to main were needed
   once before.
+
+#### v0.6.0 failed in CI; release candidates
+
+The user tagged v0.6.0 after the merge. CI failed in the test job, nothing was
+published: `tmux pane is seen only while visible` lost two checks. Cause: the
+container has no `TERM`, and `tmux attach` refuses to start without one ("open
+terminal failed: terminal does not support clear"), so the session had no
+client. Reproduced locally with `env -u TERM ./build/tests`. The test now
+starts the client through `env TERM=xterm` (same pid), and `tools/release`
+runs the tests without `TERM`, like CI.
+
+Read through the later jobs, which had never run, for the same kind of
+difference:
+- Arch's `makepkg.conf` has `debug` in `OPTIONS`, so CI would build a second,
+  `-debug` package and the release job, which expects one, would break. The
+  build job deletes it; only the package itself is released.
+- LeakSanitizer needs ptrace, which containers usually refuse:
+  `ASAN_OPTIONS=detect_leaks=0` in CI (memory errors and UB still checked).
+- `shell: bash` set for every step instead of relying on the container
+  default.
+
+So that a pipeline problem no longer costs a version, a tag `vX.Y.Z-rcN` is a
+release candidate (the user chose this over going straight to 0.6.1): CI runs
+everything but the release job, builds from the candidate's own tag (the
+PKGBUILD source is pointed at it), and `tools/check-version` and the release
+notes ignore the suffix. `tools/release X.Y.Z --rc` sets the version, commits
+"Prepare X.Y.Z" and pushes the next free `-rcN`; `tools/release X.Y.Z` then
+dates the CHANGELOG and tags the release. v0.6.0 stays as a tag that was never
+released; the next version is 0.6.1.
