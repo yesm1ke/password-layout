@@ -35,8 +35,8 @@ ADDON_CONFDIR := $(PREFIX)/share/fcitx5/addon
 USER_ADDON_LIBDIR := $(HOME)/.local/lib/password-layout
 USER_ADDON_CONFDIR := $(HOME)/.local/share/fcitx5/addon
 
-LIB_SOURCES := src/activity.cpp src/compositor.cpp src/doctor.cpp src/state.cpp src/tmux.cpp src/tty.cpp
-HEADERS := $(wildcard src/*.h)
+LIB_SOURCES := src/activity.cpp src/compositor.cpp src/doctor.cpp src/state.cpp src/tmux.cpp src/tty.cpp src/watch.cpp
+HEADERS := $(wildcard src/*.h src/fcitx/*.h)
 
 .PHONY: all test bench install uninstall install-user uninstall-user clean
 

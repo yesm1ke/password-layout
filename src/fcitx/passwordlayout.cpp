@@ -13,13 +13,11 @@
 
 #include "compositor.h"
 #include "state.h"
+#include "worker.h"
 
-#include <condition_variable>
 #include <cstdio>
 #include <exception>
 #include <memory>
-#include <mutex>
-#include <thread>
 #include <vector>
 
 #include <fcitx-utils/capabilityflags.h>
@@ -40,76 +38,21 @@ namespace {
 
 const std::string kHolder = "im";
 
-class Worker {
-public:
-    Worker() : thread_([this] { run(); }) {}
-
-    ~Worker() {
-        {
-            std::lock_guard lock(mutex_);
-            stopping_ = true;
-            wanted_ = false; // give the layout back when fcitx5 exits
+// What the worker applies: hold or give back Latin under "im".
+void apply(bool latin) {
+    try {
+        Hyprland compositor;
+        State state;
+        if (latin) {
+            state.enter(kHolder, compositor);
+        } else {
+            state.leave(kHolder, compositor);
         }
-        changed_.notify_one();
-        thread_.join();
+    } catch (const std::exception &error) {
+        // Outside Hyprland, or the compositor is restarting: nothing to do.
+        std::fprintf(stderr, "passwordlayout: %s\n", error.what());
     }
-
-    void want(bool latin) {
-        {
-            std::lock_guard lock(mutex_);
-            if (wanted_ == latin) {
-                return;
-            }
-            wanted_ = latin;
-        }
-        changed_.notify_one();
-    }
-
-private:
-    void run() {
-        // A previous fcitx5 that died while a password field had focus left
-        // "im" in the shared state, and while it is there the terminal service
-        // cannot switch either. Give it back first, on this thread like every
-        // other call that reaches the compositor.
-        apply(false);
-        bool applied = false;
-        std::unique_lock lock(mutex_);
-        for (;;) {
-            changed_.wait(lock, [&] { return stopping_ || wanted_ != applied; });
-            if (wanted_ != applied) {
-                bool latin = wanted_;
-                lock.unlock();
-                apply(latin);
-                lock.lock();
-                applied = latin;
-            }
-            if (stopping_ && wanted_ == applied) {
-                return;
-            }
-        }
-    }
-
-    static void apply(bool latin) {
-        try {
-            Hyprland compositor;
-            State state;
-            if (latin) {
-                state.enter(kHolder, compositor);
-            } else {
-                state.leave(kHolder, compositor);
-            }
-        } catch (const std::exception &error) {
-            // Outside Hyprland, or the compositor is restarting: nothing to do.
-            std::fprintf(stderr, "passwordlayout: %s\n", error.what());
-        }
-    }
-
-    std::mutex mutex_;
-    std::condition_variable changed_;
-    bool wanted_ = false;
-    bool stopping_ = false;
-    std::thread thread_;
-};
+}
 
 class PasswordLayout : public fcitx::AddonInstance {
 public:
@@ -151,7 +94,7 @@ private:
     }
 
     fcitx::InputContext *focused_ = nullptr;
-    Worker worker_;
+    Worker worker_{apply};
     std::vector<std::unique_ptr<fcitx::HandlerTableEntry<fcitx::EventHandler>>> watchers_;
 };
 

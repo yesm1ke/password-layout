@@ -23,13 +23,14 @@ Hyprland and restores the old layout after the last holder leaves.
 | Path | What |
 |---|---|
 | `src/main.cpp` | subcommands (`watch-tty`, `enter`, `leave`, `status`, `doctor`) and the service loop |
+| `src/watch.*` | `PromptWatcher` (is a prompt up, is it in the focused window) and `nextPace` (second look, polling, sleeping) |
 | `src/tty.*` | prompt detection by terminal mode; process tree; which window owns a pty |
 | `src/activity.*` | inotify on `/dev/pts` and `/dev/tty`: wakes the service only when terminals print |
 | `src/tmux.*` | asks tmux which pane is visible in which client |
 | `src/compositor.*` | Hyprland socket: layouts, switching, focused window; minimal JSON reading; which layouts are Latin (measured tables, `tests/xkb-latin.tsv`, `tools/xkb-latin.c`) |
 | `src/state.*` | holders (`tty`, `im`) and the layout to restore, in `$XDG_RUNTIME_DIR/password-layout/` |
 | `src/doctor.*` | `password-layout doctor`: checks the setup, explains problems |
-| `src/fcitx/` | the fcitx5 addon (`libpasswordlayout.so`) and its description template |
+| `src/fcitx/` | the fcitx5 addon (`libpasswordlayout.so`), its description template, and `worker.h` (the thread that applies the latest wish; no fcitx5 dependency, tested directly) |
 | `systemd/` | the user unit and its sandbox drop-in |
 | `tests/test.cpp` | all tests, one binary, no framework |
 | `bench/` | resource measurements (`make bench`; results in the [wiki](https://github.com/yesm1ke/password-layout/wiki/Resource-use)) |
