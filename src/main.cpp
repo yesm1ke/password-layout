@@ -223,11 +223,11 @@ int printStatus(Compositor &compositor, State &state) {
 }
 
 int usage() {
-    std::fputs("usage: password-layout enter <holder>\n"
-               "       password-layout leave <holder>\n"
-               "       password-layout watch-tty\n"
-               "       password-layout status\n"
-               "       password-layout doctor\n",
+    std::fputs("usage: password-layout enter <holder>   hold Latin (from your own scripts)\n"
+               "       password-layout leave <holder>   give it back\n"
+               "       password-layout watch-tty        the terminal service\n"
+               "       password-layout status           layout, holders, prompts\n"
+               "       password-layout doctor           check the setup\n",
                stderr);
     return 2;
 }
