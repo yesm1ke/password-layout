@@ -6,7 +6,7 @@ What changed for someone who installs the package. Work in progress is in the
 The releases below, up to 0.6.2, were withdrawn on 2026-10-01: the history was
 rewritten and they no longer match it. Their entries stay as a record.
 
-## 0.7.1 — unreleased
+## 0.7.1 — 2026-10-01
 
 - Which layouts count as Latin is now measured, not guessed by layout code:
   85 of xkeyboard-config's 597 layouts and variants were wrong before. Urdu,
