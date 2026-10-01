@@ -12,22 +12,17 @@ Updated with every change. The stages are described in [PLAN.md](PLAN.md).
 
 ## Next steps
 
-Plan agreed on 2026-10-01: security, ease of use, releases built by CI.
+The plan agreed on 2026-10-01 (security, ease of use, releases built by CI)
+is done through 0.6.2; see the journal. Open work is tracked as GitHub
+[issues](https://github.com/yesm1ke/password-layout/issues), one each:
 
-1. Release pipeline and hardening are done on the `release-pipeline` branch
-   and go out together as 0.6.0 (instead of a separate 0.5.1), through
-   `tools/release` after the merge into main: the first release built, signed
-   and attested by GitHub Actions. Tag ruleset and private vulnerability
-   reporting are set up (journal); the branch is in review as a pull request.
-2. ~~Service and code hardening~~ — done, see the journal.
-3. ~~`password-layout doctor`~~ — done, goes out in 0.6.0 as well.
-4. When Arch ships fcitx5-qt 5.1.16: re-check KeePassXC, the polkit prompt and
-   the Omarchy lock screen (backlog).
-5. Prompts that draw asterisks, by foreground process name (backlog).
-6. By hand: an `ssh` password prompt typed with a non-Latin layout active.
+1. When Arch ships fcitx5-qt 5.1.16: re-check KeePassXC, the polkit prompt and
+   the Omarchy lock screen, then close [#7](https://github.com/yesm1ke/password-layout/issues/7).
+2. Prompts that draw asterisks, by foreground process name: [#9](https://github.com/yesm1ke/password-layout/issues/9).
+3. Electron password managers: [#8](https://github.com/yesm1ke/password-layout/issues/8). The AUR: [#11](https://github.com/yesm1ke/password-layout/issues/11).
+4. By hand: an `ssh` password prompt typed with a non-Latin layout active.
 
-Deferred problems are in [BACKLOG.md](BACKLOG.md), resource measurements in
-[BENCHMARKS.md](BENCHMARKS.md).
+Resource measurements are in [BENCHMARKS.md](BENCHMARKS.md).
 
 ## Journal
 
@@ -139,7 +134,7 @@ Verified on real pseudo-terminals, with the prompt appearing 3 s after the last
 output: `read -s -p`, Python `getpass`, `sudo -k true` — Latin comes on and goes
 back.
 
-A new limitation, the silent prompt, is recorded in [BACKLOG.md](BACKLOG.md).
+A new limitation, the silent prompt, was recorded in the backlog (now [#6](https://github.com/yesm1ke/password-layout/issues/6)).
 
 #### Measurements collected in one place
 
@@ -169,13 +164,13 @@ tables, method and caveats are in [BENCHMARKS.md](BENCHMARKS.md).
   URL and the release is unsigned. The instruction now downloads the file first.
   Installed that way on the development machine: `pacman -Q` shows 0.1.0-1 and
   the service runs from `/usr/bin`, replacing the `make install-user` copy.
-- The AUR is pending an account; see [BACKLOG.md](BACKLOG.md).
+- The AUR is pending an account; see [#11](https://github.com/yesm1ke/password-layout/issues/11).
 
 #### Found in use: prompts under sudo
 
 A pacman hook asked for an ssh key passphrase and the layout did not switch.
 Cause: `sudo` runs its command in a root-owned pseudo-terminal that the service
-cannot open. Recorded in [BACKLOG.md](BACKLOG.md) with the options; the README
+cannot open. Recorded in the backlog (now [#10](https://github.com/yesm1ke/password-layout/issues/10)) with the options; the README
 limitation was rewritten to say this plainly, as it covers far more than the
 `sudo -i` it used to mention.
 
@@ -265,7 +260,7 @@ fcitx5's D-Bus controller turns it on) and `dbus-monitor`: the Qt input-method
 module sends only base capabilities for the first focus of a window, without the
 password hint. The Omarchy polkit prompt shows the same. It is fcitx5-qt issue
 #85, fixed upstream in 5.1.16; Arch has 5.1.15. Details in
-[BACKLOG.md](BACKLOG.md).
+[#7](https://github.com/yesm1ke/password-layout/issues/7).
 
 Tried along the way without success: `QT_IM_MODULE=wayland` (the field then gets
 no input context at all).
@@ -612,3 +607,14 @@ active: `tools/fake-field --password` made the holder `im` and the keymap
 English (US), Russian came back after focus left; a plain field holds nothing.
 The fcitx5 log has `Latin for im (layout 0, was 1)` and `layout 1 restored
 (im left)`.
+
+#### Backlog moved to GitHub issues; community files
+
+On the user's request the six backlog entries became issues with their full
+text: #6 silent prompt, #7 the fcitx5-qt bug, #8 Electron password managers,
+#9 prompts with asterisks, #10 prompts under sudo, #11 the AUR. New labels:
+`limitation`, `upstream`, `needs-decision`, `packaging`. BACKLOG.md is gone;
+README, PLAN and this file link to the issues (journal links included).
+Community files: CONTRIBUTING.md, CODE_OF_CONDUCT.md (Contributor Covenant
+2.1), issue forms that ask for `password-layout doctor` output, a pull request
+template, and repository topics.
