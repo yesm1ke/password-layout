@@ -124,7 +124,7 @@ sudo make PREFIX=/usr install
 `make install` only puts files in place (it honours `DESTDIR` and `PREFIX`).
 To build the Arch package yourself, from the latest release tag:
 `cd packaging/arch && makepkg -si`. Other targets: `make test`, and
-`make bench` for the measurements in [BENCHMARKS.md](BENCHMARKS.md).
+`make bench` for the [measurements](https://github.com/yesm1ke/password-layout/wiki/Resource-use).
 
 ### Turning it on and off
 
@@ -197,52 +197,16 @@ It exits with 1 when something is broken. For more detail:
 
 ## How it works
 
-A terminal does not tell anyone that it is showing a password prompt. What gives
-a prompt away is the mode of its pseudo-terminal: **echo is off while line input
-is still on**. Shells and full-screen programs turn both off; ordinary line input
-keeps both on. macOS Ghostty uses the same heuristic for its secure input.
-
-While terminals are quiet the service sleeps: it wakes when the kernel
-reports, through inotify, that some terminal printed something, and checks
-the mode of only the terminals that printed. While a terminal keeps printing,
-or a prompt is up, it looks every 200 ms instead (focus can move and a prompt
-can end without any output); see [BENCHMARKS.md](BENCHMARKS.md) for what that
-costs. A prompt nearly always prints its text, so waking on output is enough;
-the one exception is [#6](https://github.com/yesm1ke/password-layout/issues/6).
-
-The layout is switched only if the prompting terminal belongs to the focused
-window, which is decided by walking the process tree from the terminal up to the
-window's process. Inside tmux that walk ends at the tmux server, so tmux itself is
-asked which pane is active and which of its clients — ordinary processes inside
-a terminal window — shows that session. When the prompt ends, or focus moves elsewhere, the previous
-layout is restored.
-
-Graphical applications are a different story: they do tell the input method
-what kind of field has focus, and mark password fields — the same fact macOS
-acts on. The fcitx5 addon (`libpasswordlayout.so`) follows focus and that mark.
-It never talks to the compositor on fcitx5's own thread, which every key press
-goes through; a worker thread applies only the latest wish, so hopping across
-fields costs at most one switch and a slow compositor cannot delay typing.
-
-`password-layout` is one binary with subcommands:
-
-| Subcommand | Purpose |
-|---|---|
-| `watch-tty` | the service: watches terminals for password prompts |
-| `enter <who>` / `leave <who>` | for other sources: "Latin is needed" / "no longer needed" |
-| `status` | current layout, who is holding Latin, which terminals are at a prompt |
-| `doctor` | checks the setup and explains what is wrong |
-
-The terminal service and the addon hold Latin under separate names (`tty` and
-`im`). The layout that was active before the first of them asked for Latin is
-restored after the last one lets go; it is kept in
-`$XDG_RUNTIME_DIR/password-layout/state`.
-
-Source layout: `src/fcitx/` is the fcitx5 addon, `src/tty.*` recognises a prompt and finds the window that owns
-the terminal, `src/activity.*` waits for terminal output, `src/compositor.*`
-talks to Hyprland, `src/tmux.*` asks tmux about panes and clients,
-`src/state.*` tracks who holds Latin and what to restore, `src/doctor.*` checks the setup,
-`src/main.cpp` has the subcommands and the service loop.
+A terminal does not say it is showing a password prompt, but the mode of its
+pseudo-terminal does: **echo off while line input is on**, which is how
+`sudo`, `ssh` and `getpass` read. The service wakes on terminal output
+(inotify), checks the mode of the terminals that printed, and switches only if
+the prompt belongs to the focused window (by the process tree; through tmux
+for tmux panes). Graphical applications mark password fields for the input
+method, and the fcitx5 addon follows that mark, never touching the
+compositor on fcitx5's own thread. Both hold Latin under their own name; the
+layout from before comes back after the last one lets go. Details:
+[How it works](https://github.com/yesm1ke/password-layout/wiki/How-it-works) in the wiki.
 
 ## Limitations
 
@@ -272,23 +236,17 @@ talks to Hyprland, `src/tmux.*` asks tmux about panes and clients,
 
 ## Resource use
 
-The service is meant to run all the time, so it was measured and tuned: about
-0.5 MB of its own memory, no wakeups while terminals are quiet, and roughly
-0.05% of one core while a terminal prints continuously. Figures and method are
-in [BENCHMARKS.md](BENCHMARKS.md).
+About 0.5 MB of its own memory, no wakeups while terminals are quiet, roughly
+0.05% of one core while a terminal prints continuously
+([measurements](https://github.com/yesm1ke/password-layout/wiki/Resource-use)).
 
-## Project documents
+## More
 
-- [PLAN.md](PLAN.md) — stages and the decisions behind them.
-- [STATUS.md](STATUS.md) — what is done, what was verified, what is next.
-- [Issues](https://github.com/yesm1ke/password-layout/issues) — known limitations and
-  deferred work, one issue each (label `limitation`).
-- [BENCHMARKS.md](BENCHMARKS.md) — resource use and how it was measured.
-- [CHANGELOG.md](CHANGELOG.md) — what changed in each release.
-- [SECURITY.md](SECURITY.md) — what it can see, and how to report a problem.
-- [CONTRIBUTING.md](CONTRIBUTING.md) — reporting problems, building, testing.
-- [AGENTS.md](AGENTS.md) — a working guide to the repository for coding agents
-  and new contributors.
+- [Issues](https://github.com/yesm1ke/password-layout/issues): known limitations
+  (label `limitation`) and planned work, grouped in milestones.
+- [Wiki](https://github.com/yesm1ke/password-layout/wiki): how it works, design decisions, measurements, the early journal.
+- [CHANGELOG.md](CHANGELOG.md), [SECURITY.md](SECURITY.md),
+  [CONTRIBUTING.md](CONTRIBUTING.md), [AGENTS.md](AGENTS.md).
 
 ## License
 

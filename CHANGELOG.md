@@ -1,7 +1,7 @@
 # Changelog
 
-What changed for someone who installs the package. The day-to-day record is in
-[STATUS.md](STATUS.md).
+What changed for someone who installs the package. Work in progress is in the
+[issues](https://github.com/yesm1ke/password-layout/issues).
 
 The releases below, up to 0.6.2, were withdrawn on 2026-10-01: the history was
 rewritten and they no longer match it. Their entries stay as a record.
