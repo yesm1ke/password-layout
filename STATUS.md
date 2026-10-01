@@ -590,3 +590,16 @@ against (5.1.0); within a series the ABI holds, a break changes the soname. The
 smoke job checks the installed description for that form. `doctor` compares
 the core version the description asks for with `fcitx5 --version` and says
 "update the system, or install a package built for this fcitx5". Test added.
+
+#### 0.6.2, and the fixed-name URL with pacman
+
+0.6.2 went out the same way (rc1 green, then the release; checksums, the three
+signatures and the attestation verified; the package carries `0=core:5.1.0`).
+Installing it with `pacman -U <latest/download URL>` reinstalled 0.6.1:
+pacman keeps downloads in `/var/cache/pacman/pkg` by file name and, for a name
+it has, installs the cached file without fetching (the cache held 0.6.1 under
+`password-layout-x86_64.pkg.tar.zst`). So the fixed name works for `curl -LO`
+and a local file, but never for updates through pacman's URL form. The README's
+pacman command now names the version; `tools/release` rewrites it for each
+release and `tools/check-version` fails a release whose README names another
+version.
