@@ -47,9 +47,11 @@ tools/check-addon-events
 
 ## Releases
 
-Done by the maintainer with `tools/release X.Y.Z --rc`, then
-`tools/release X.Y.Z` once the candidate's CI run is green. GitHub Actions
-builds, signs and publishes; see the comments in `tools/release` and
-`.github/workflows/release.yml`.
+Done by the maintainer with `tools/release X.Y.Z`, run twice: it opens a
+pull request that sets the version, and after the merge it tags the commit.
+GitHub Actions builds, signs and publishes; see the comments in
+`tools/release` and `.github/workflows/release.yml`.
+
+Pull requests are merged with "Rebase and merge"; CI runs on each of them.
 
 Everyone taking part follows the [Code of Conduct](CODE_OF_CONDUCT.md).

@@ -1,6 +1,6 @@
 # password-layout
 
-[![Release workflow](https://github.com/yesm1ke/password-layout/actions/workflows/release.yml/badge.svg)](https://github.com/yesm1ke/password-layout/actions/workflows/release.yml)
+[![CI](https://github.com/yesm1ke/password-layout/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/yesm1ke/password-layout/actions/workflows/ci.yml)
 [![For Hyprland, fcitx5, Arch](https://img.shields.io/badge/for-Hyprland%20%C2%B7%20fcitx5%20%C2%B7%20Arch-blue)](#requirements)
 [![License: MIT](https://img.shields.io/github/license/yesm1ke/password-layout)](LICENSE)
 

@@ -1,11 +1,10 @@
-# Builds, tests, signs and publishes a release. Runs only for a pushed tag:
-# vX.Y.Z goes all the way; a release candidate vX.Y.Z-rcN runs every check,
-# builds and installs the package, but signs and publishes nothing. A failed
-# release tag cannot be reused, so tools/release puts out a candidate first.
+# Publishes a release for a pushed tag vX.Y.Z. The tag is set by tools/release
+# on a main commit whose CI is green, so build.yml repeats the same checks, now
+# building the package from the tag.
 #
 # The signing key is a secret of the "release" environment, which only v* tags
 # may use. The job that holds it runs no code from the repository: it signs,
-# attests and uploads files the earlier jobs built.
+# attests and uploads files the build jobs made.
 
 name: release
 
@@ -15,131 +14,29 @@ on:
 
 permissions: {}
 
-defaults:
-  run:
-    shell: bash
-
 concurrency:
   group: release-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
-  test:
-    runs-on: ubuntu-latest
-    container: archlinux:base-devel
-    steps:
-      - name: Install build dependencies
-        run: pacman -Syu --noconfirm --needed git fcitx5 tmux
-
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-
-      - name: Versions match the tag
-        run: tools/check-version "${GITHUB_REF_NAME}"
-
-      - name: Tests
-        run: |
-          CXXFLAGS="-O2 -Werror" make
-          CXXFLAGS="-O2 -Werror" make test
-
-      # Leak checking needs ptrace, which containers usually do not allow;
-      # memory errors and undefined behaviour are what matters here.
-      - name: Tests with AddressSanitizer and UndefinedBehaviorSanitizer
-        env:
-          ASAN_OPTIONS: detect_leaks=0
-          CXXFLAGS: -O1 -g -fno-omit-frame-pointer -fsanitize=address,undefined -fno-sanitize-recover=all
-          LDFLAGS: -fsanitize=address,undefined
-        run: |
-          make clean
-          make test
-
-      - name: The addon never handles key events
-        run: tools/check-addon-events
-
   build:
-    needs: test
-    runs-on: ubuntu-latest
-    container: archlinux:base-devel
+    uses: ./.github/workflows/build.yml
+    with:
+      from-tag: true
     permissions:
       contents: read
-    steps:
-      - name: Install build dependencies
-        run: pacman -Syu --noconfirm --needed git fcitx5 tmux namcap
-
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-
-      # makepkg refuses to run as root.
-      - name: Build the package from the tag
-        run: |
-          useradd --create-home builder
-          chown -R builder: .
-          cd packaging/arch
-          su builder -c 'makepkg --printsrcinfo' | diff -u .SRCINFO -
-          # A candidate is built from its own tag; vX.Y.Z does not exist yet.
-          if [[ $GITHUB_REF_NAME == *-* ]]; then
-            sed -i "s|#tag=v\$pkgver|#tag=$GITHUB_REF_NAME|" PKGBUILD
-            grep -q "#tag=$GITHUB_REF_NAME" PKGBUILD
-          fi
-          # Runtime dependencies (Hyprland) are not needed to build or test.
-          su builder -c 'makepkg --nodeps --noconfirm'
-          # Arch's makepkg.conf also builds a -debug package; only the package
-          # itself is released.
-          rm -f ./*-debug-*.pkg.tar.zst
-          namcap PKGBUILD
-          namcap ./*.pkg.tar.zst
-
-      - name: Release notes
-        run: |
-          version=${GITHUB_REF_NAME#v}
-          tools/release-notes "${version%%-*}" > notes.md
-
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
-        with:
-          name: package
-          path: |
-            packaging/arch/*.pkg.tar.zst
-            notes.md
-          if-no-files-found: error
-
-  smoke:
-    needs: build
-    runs-on: ubuntu-latest
-    container: archlinux:base
-    steps:
-      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
-        with:
-          name: package
-
-      # No systemd sessions here: the install script must skip them, not fail.
-      - name: Install, run, remove
-        run: |
-          pacman -Syu --noconfirm
-          pacman -U --noconfirm packaging/arch/*.pkg.tar.zst
-          pacman -Ql password-layout
-          # The addon must ask for a fcitx5 series, not the exact fcitx5 this
-          # container had: fcitx5 silently skips it on anything older.
-          grep -E '^0=core:[0-9]+\.[0-9]+\.0$' /usr/share/fcitx5/addon/passwordlayout.conf
-          set +e
-          password-layout status
-          code=$?
-          set -e
-          echo "exit code without Hyprland: $code"
-          test "$code" -ge 1 && test "$code" -lt 128
-          pacman -R --noconfirm password-layout
 
   release:
-    needs: smoke
-    # Not for release candidates (vX.Y.Z-rcN).
-    if: ${{ !contains(github.ref_name, '-') }}
+    needs: build
     runs-on: ubuntu-latest
     environment: release
     permissions:
       contents: write
       id-token: write
       attestations: write
+    defaults:
+      run:
+        shell: bash
     steps:
       - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
         with:
@@ -153,7 +50,7 @@ jobs:
           package=$(ls ./*.pkg.tar.zst)
           arch=${package##*-}
           arch=${arch%%.pkg.tar.zst}
-          # A fixed name so README can link to releases/latest/download/.
+          # A fixed name for releases/latest/download/ (for curl, not pacman).
           cp "$package" "password-layout-$arch.pkg.tar.zst"
 
       - name: Sign
