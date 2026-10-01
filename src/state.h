@@ -4,7 +4,13 @@
 
 #include <optional>
 #include <string>
+#include <string_view>
 #include <vector>
+
+// A holder name is one line of the state file: lowercase letters, digits and
+// '-', at most 32 characters. enter() and leave() reject anything else, so a
+// name given on the command line cannot add lines of its own.
+bool isValidHolder(std::string_view holder);
 
 // Who currently wants Latin, and which layout to give back afterwards.
 //

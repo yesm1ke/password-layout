@@ -1,0 +1,60 @@
+#!/bin/bash
+# Creates the release signing key and hands it to GitHub. Run by the
+# maintainer, once, and again only to replace the key.
+#
+# - The key is a separate ed25519 signing key used for nothing but releases.
+#   It is created in a throwaway GnuPG home; the private part goes only into
+#   the secrets of the "release" environment (RELEASE_GPG_KEY and
+#   RELEASE_GPG_PASSPHRASE) and is then deleted from this machine. Losing it
+#   means making a new one with this script, not a crisis.
+# - The "release" environment is limited to v* tags, so no branch or pull
+#   request workflow can read the secrets.
+# - The public key is written to packaging/arch/password-layout.asc (commit it)
+#   and sent to keyserver.ubuntu.com, which pacman-key uses.
+# - The revocation certificate is kept in ~/.local/share/password-layout-release/;
+#   move it into your password manager.
+#
+# Needs: gpg, gh logged in with the "repo" scope.
+
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+repo=yesm1ke/password-layout
+uid="password-layout releases <28575713+yesm1ke@users.noreply.github.com>"
+
+home=$(mktemp -d)
+trap 'rm -rf "$home"' EXIT
+export GNUPGHOME=$home
+chmod 700 "$home"
+
+head -c 32 /dev/urandom | base64 | tr -d '=+/\n' > "$home/passphrase"
+gpg --batch --quiet --pinentry-mode loopback --passphrase-file "$home/passphrase" \
+  --quick-gen-key "$uid" ed25519 sign 3y
+fpr=$(gpg --list-keys --with-colons | awk -F: '/^fpr/ { print $10; exit }')
+
+echo "Environment \"release\", for v* tags only"
+gh api --silent -X PUT "repos/$repo/environments/release" \
+  -F 'deployment_branch_policy[protected_branches]=false' \
+  -F 'deployment_branch_policy[custom_branch_policies]=true'
+if ! gh api "repos/$repo/environments/release/deployment-branch-policies" \
+  --jq '.branch_policies[] | select(.type == "tag") | .name' | grep -qx 'v\*'; then
+  gh api --silent -X POST "repos/$repo/environments/release/deployment-branch-policies" \
+    -f name='v*' -f type=tag
+fi
+
+echo "Secrets"
+gpg --batch --quiet --pinentry-mode loopback --passphrase-file "$home/passphrase" \
+  --armor --export-secret-keys "$fpr" | gh secret set RELEASE_GPG_KEY --env release -R "$repo"
+gh secret set RELEASE_GPG_PASSPHRASE --env release -R "$repo" < "$home/passphrase"
+
+gpg --armor --export "$fpr" > packaging/arch/password-layout.asc
+gpg --keyserver hkps://keyserver.ubuntu.com --send-keys "$fpr"
+
+keep=$HOME/.local/share/password-layout-release
+install -d -m 700 "$keep"
+install -m 600 "$home/openpgp-revocs.d/$fpr.rev" "$keep/revocation-$fpr.asc"
+
+echo
+echo "Fingerprint: $fpr"
+echo "Public key:  packaging/arch/password-layout.asc (commit it)"
+echo "Revocation:  $keep/revocation-$fpr.asc (move it to your password manager)"

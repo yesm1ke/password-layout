@@ -28,6 +28,8 @@ public:
     std::vector<bool> latinLayouts() override;
     void setLayout(int index) override;
     pid_t focusedPid() override;
+    // xkb's comma-separated layout list, e.g. "us,ru"; for messages.
+    std::string layoutList();
 
 private:
     std::string request(std::string_view command) const;

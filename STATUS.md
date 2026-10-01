@@ -8,18 +8,23 @@ Updated with every change. The stages are described in [PLAN.md](PLAN.md).
 | 2. Survey of graphical applications | browsers done; Qt: blocked by an upstream fcitx5-qt bug (backlog) |
 | 3. fcitx5 addon | works in Zen and Chromium (checked by hand); released in 0.2.0 |
 | 4. Browser | not needed: Zen and Chromium mark password fields |
-| 5. Finishing | setup without manual steps, Latin layout by name, logging (0.4.0) |
+| 5. Finishing | setup without manual steps, Latin layout by name, logging (0.4.0); release pipeline on GitHub Actions (prepared, waiting for the signing key) |
 
 ## Next steps
 
-1. By hand, with a non-Latin layout active: connect somewhere over `ssh` with a
-   password; confirm the layout becomes Latin and comes back. `sudo` was
-   checked by typing on 2026-09-30.
-2. tmux: a prompt inside tmux is not recognised (confirmed). There is a way: tmux
-   reports which pane is on which terminal and which client is attached to which
-   session. To be done if tmux matters.
-3. Prompts that draw asterisks: deferred to the backlog.
-4. Start the survey of stage 2.
+Plan agreed on 2026-10-01: security, ease of use, releases built by CI.
+
+1. Release pipeline and hardening are done on the `release-pipeline` branch
+   and go out together as 0.6.0 (instead of a separate 0.5.1), through
+   `tools/release` after the merge into main: the first release built, signed
+   and attested by GitHub Actions. Tag ruleset and private vulnerability
+   reporting are set up (journal); the branch is in review as a pull request.
+2. ~~Service and code hardening~~ — done, see the journal.
+3. ~~`password-layout doctor`~~ — done, goes out in 0.6.0 as well.
+4. When Arch ships fcitx5-qt 5.1.16: re-check KeePassXC, the polkit prompt and
+   the Omarchy lock screen (backlog).
+5. Prompts that draw asterisks, by foreground process name (backlog).
+6. By hand: an `ssh` password prompt typed with a non-Latin layout active.
 
 Deferred problems are in [BACKLOG.md](BACKLOG.md), resource measurements in
 [BENCHMARKS.md](BENCHMARKS.md).
@@ -405,3 +410,127 @@ needs only Hyprland and systemd.
 State at the end of the day: stage 1 is done, installed and running as
 `password-layout-tty.service`; 14 tests pass. Open: the check by typing, and the backlog: the silent prompt, prompts under
 `sudo`, the AUR, and a release procedure. The licence is MIT.
+
+### 2026-10-01
+
+#### Releases built by GitHub Actions
+
+Asked for by the user: tests on GitHub's public runners, for releases only,
+with a focus on security. Public repositories get the standard runners for
+free. The user chose a tag-only trigger and both kinds of verification: a
+GPG signature and a GitHub build attestation.
+
+- `.github/workflows/release.yml`, on a pushed `v*` tag only, all in an
+  `archlinux:base-devel` container: versions agree with the tag
+  (`tools/check-version`); tests with `-Werror` and again with ASan and UBSan
+  (the parsers read window titles, tmux output and `/proc`); the addon is
+  checked to follow only focus and capability events
+  (`tools/check-addon-events`, the promise in SECURITY.md); `makepkg` from the
+  tag as an unprivileged user, `.SRCINFO` compared with the PKGBUILD, `namcap`;
+  install, run and remove in a clean container with no systemd sessions; then
+  sign, attest and publish with notes from CHANGELOG.md
+  (`tools/release-notes`). The package is attached twice, once under a fixed
+  name for `releases/latest/download/`.
+- The signing job runs in the `release` environment, open to `v*` tags only,
+  and runs no code from the repository. Actions are pinned by commit SHA,
+  permissions are empty by default, Dependabot updates the pins monthly.
+- `tools/release X.Y.Z` runs the same tests on the committed code before it
+  bumps the version, dates the CHANGELOG section, tags and pushes: with a
+  tag-only trigger a failed tag cannot be reused. This replaces the manual
+  procedure that was in the backlog.
+- `tools/setup-release-key` makes a separate ed25519 key for releases only, in
+  a throwaway GnuPG home, puts it into the environment's secrets and the public
+  part into `packaging/arch/password-layout.asc` and keyserver.ubuntu.com. The
+  maintainer runs it: creating keys and writing secrets is not delegated.
+- PKGBUILD gained `check()` (the tests). New: SECURITY.md (what the addon and
+  the service see, checked against the code: terminals opened read-only, only
+  `AF_UNIX` sockets, logs carry layout numbers), CHANGELOG.md, a README install
+  section with both ways of checking the package.
+- Locally: 24 tests pass with `-O2 -Werror` (addon included) and with ASan and
+  UBSan. The workflow itself has not run yet; Docker here needs root, so the
+  container steps are first exercised by the first release tag (0.6.0).
+- Not done, on purpose: pinning `fcitx5<5.2` in the PKGBUILD. An ABI break in
+  fcitx5 comes with a new soname, which keeps an old addon from loading rather
+  than crashing fcitx5, while a version pin would block fcitx5 updates for
+  the whole system.
+
+#### Release key
+
+The maintainer ran `tools/setup-release-key`: key
+`7C5242797972ED2923B944029AC95674831AE330` (ed25519, signing only, expires
+2029-09-30), the `release` environment limited to `v*` tags with the two
+secrets, the public key in `packaging/arch/password-layout.asc`. Checked:
+`gpg --recv-keys` of the full fingerprint from keyserver.ubuntu.com imports it
+(a lookup by the short id answers "Not Found"; the README uses the full one).
+The work stays on the `release-pipeline` branch until it is ready for main.
+
+#### Hardening (stage 2 of the plan)
+
+- **Sandbox of the user unit**, tried live as drop-ins over the installed unit
+  with a Russian layout active, opening foot windows with `read -s`, with
+  `read -s` inside tmux and with a real `sudo -v`; every case switched to Latin
+  and back. `systemd-analyze --user security`: 9.4 UNSAFE before, 2.9 OK after.
+  - In the unit, working on any kernel: `NoNewPrivileges`,
+    `RestrictAddressFamilies=AF_UNIX`, `RestrictNamespaces`, `RestrictRealtime`,
+    `RestrictSUIDSGID`, `LockPersonality`, `MemoryDenyWriteExecute`,
+    `SystemCallArchitectures=native`, `SystemCallFilter=@system-service` minus
+    `@privileged @resources`, `KeyringMode=private`, `UMask=0077` (5.5 alone).
+  - In `password-layout-tty.service.d/sandbox-namespaces.conf`: the options
+    that a user manager can only apply inside a user namespace —
+    `PrivateUsers=self`, `ProtectSystem=strict` with `ReadWritePaths=%t`,
+    `ProtectHome=read-only`, `PrivateNetwork`, `ProtectProc=invisible`,
+    `ProcSubset=pid`, `ProtectKernel*`, `ProtectControlGroups`, `ProtectClock`,
+    `ProtectHostname`. systemd.exec(5) says they need unprivileged user
+    namespaces; without them (linux-hardened) the service would not start, so
+    this part can be masked alone by an empty file of the same name in
+    `~/.config` (README, Troubleshooting).
+  - Not possible or not wanted: `CapabilityBoundingSet=` (a user manager may
+    not set it: the service failed with 218/CAPABILITIES), `PrivateTmp` (tmux
+    sockets live in /tmp), `PrivateDevices` (terminals are in /dev/pts).
+- **tmux client by path**: the client is run from `/proc/<server>/exe` — the
+  running server's own binary, so no PATH lookup and no protocol mismatch after
+  a tmux upgrade. Found live: inside a user namespace the kernel denies access
+  to another process's exe link (exec, readlink and `access` all fail), and
+  with the namespace drop-in a prompt in tmux was not recognised. The client
+  is now that binary when `access(X_OK)` allows it and `tmux` from PATH
+  otherwise; checked live with and without the namespace part.
+- **Holder names**: `State::enter` and `leave` reject names that are not
+  `[a-z0-9-]{1,32}`, so a name with a newline cannot add lines to the state
+  file. Test added (25 tests).
+- Not done: the `fcitx5<5.2` pin (see the release pipeline entry).
+- Releases: stage 1 and stage 2 go out together as 0.6.0; CHANGELOG renamed.
+
+#### `password-layout doctor` (stage 3 of the plan)
+
+`src/doctor.*`, the subcommand runs before anything that needs Hyprland, so it
+can report Hyprland missing. Checks: Hyprland reachable and a Latin layout in
+`kb_layout` (FAIL otherwise); the user unit loaded, active and not restarting
+(FAIL/WARN; when it restarts and `kernel.unprivileged_userns_clone` is 0 the
+hint is the empty drop-in that turns the namespace part of the sandbox off);
+fcitx5 of this user running and `libpasswordlayout.so` in its `/proc/<pid>/maps`
+(WARN); `pacman -Q fcitx5-qt` older than 5.1.16 (WARN, the upstream bug);
+`sudo -V` 1.9.14 or newer (a note: prompts of programs run under sudo are not
+recognised). Exit code 1 when anything FAILs. `Hyprland::layoutList()` added
+for the message. Tests for the version comparison, the `sudo -V` parsing and
+the maps match (26 tests).
+
+Live on the development machine: ok for Hyprland (`us,ru`, Latin `us`), the
+service and the addon; warn for fcitx5-qt 5.1.15-1; the sudo note. Also
+checked: without `HYPRLAND_INSTANCE_SIGNATURE` and with the service stopped
+both FAIL with a hint and exit code 1 (the service was started again).
+Not checked: the restart-loop hint, which needs a kernel without unprivileged
+user namespaces.
+
+Plan item 3 (no update check in `doctor`) kept: the service and the tool make
+no network requests.
+
+#### GitHub settings
+
+- Ruleset "Release tags" (active): creating, moving and deleting `refs/tags/v*`
+  is blocked for everyone but the repository admin role. A release tag is what
+  unlocks the `release` environment and its signing key, so only the
+  maintainer can start a release. The workflow does not create tags
+  (`gh release create --verify-tag`).
+- Private vulnerability reporting is on (SECURITY.md points to it).
+- No ruleset for main: not asked for yet; force-pushes to main were needed
+  once before.

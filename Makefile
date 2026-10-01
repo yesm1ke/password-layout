@@ -13,6 +13,9 @@ USER_BINDIR := $(HOME)/.local/bin
 USER_UNIT_DIR := $(HOME)/.config/systemd/user
 
 UNIT := password-layout-tty.service
+# Sandboxing that needs user namespaces, in a drop-in of its own so that it can
+# be turned off alone (see the file).
+DROPIN := $(UNIT).d/sandbox-namespaces.conf
 
 VERSION := 0.5.0
 
@@ -25,7 +28,7 @@ ADDON_CONFDIR := $(PREFIX)/share/fcitx5/addon
 USER_ADDON_LIBDIR := $(HOME)/.local/lib/password-layout
 USER_ADDON_CONFDIR := $(HOME)/.local/share/fcitx5/addon
 
-LIB_SOURCES := src/activity.cpp src/compositor.cpp src/state.cpp src/tmux.cpp src/tty.cpp
+LIB_SOURCES := src/activity.cpp src/compositor.cpp src/doctor.cpp src/state.cpp src/tmux.cpp src/tty.cpp
 HEADERS := $(wildcard src/*.h)
 
 .PHONY: all test bench install uninstall install-user uninstall-user clean
@@ -83,6 +86,7 @@ build/user/$(UNIT): systemd/$(UNIT).in
 install: all build/system/$(UNIT) $(if $(ADDON),build/system/passwordlayout.conf)
 	install -Dm755 build/password-layout $(DESTDIR)$(BINDIR)/password-layout
 	install -Dm644 build/system/$(UNIT) $(DESTDIR)$(UNIT_DIR)/$(UNIT)
+	install -Dm644 systemd/sandbox-namespaces.conf $(DESTDIR)$(UNIT_DIR)/$(DROPIN)
 	install -d $(DESTDIR)$(UNIT_DIR)/graphical-session.target.wants
 	ln -sf ../$(UNIT) $(DESTDIR)$(UNIT_DIR)/graphical-session.target.wants/$(UNIT)
 	install -Dm644 LICENSE $(DESTDIR)$(LICENSE_DIR)/LICENSE
@@ -93,6 +97,8 @@ endif
 
 uninstall:
 	rm -f $(DESTDIR)$(BINDIR)/password-layout $(DESTDIR)$(UNIT_DIR)/$(UNIT)
+	rm -f $(DESTDIR)$(UNIT_DIR)/$(DROPIN)
+	-rmdir $(DESTDIR)$(UNIT_DIR)/$(UNIT).d
 	rm -f $(DESTDIR)$(UNIT_DIR)/graphical-session.target.wants/$(UNIT)
 	rm -f $(DESTDIR)$(ADDON_LIBDIR)/libpasswordlayout.so $(DESTDIR)$(ADDON_CONFDIR)/passwordlayout.conf
 	rm -rf $(DESTDIR)$(LICENSE_DIR)
@@ -101,6 +107,7 @@ install-user: all build/user/$(UNIT) $(if $(ADDON),build/user/passwordlayout.con
 	rm -f $(USER_BINDIR)/password-layout
 	install -Dm755 build/password-layout $(USER_BINDIR)/password-layout
 	install -Dm644 build/user/$(UNIT) $(USER_UNIT_DIR)/$(UNIT)
+	install -Dm644 systemd/sandbox-namespaces.conf $(USER_UNIT_DIR)/$(DROPIN)
 	systemctl --user daemon-reload
 	systemctl --user enable $(UNIT)
 	systemctl --user restart $(UNIT)
@@ -113,7 +120,8 @@ endif
 
 uninstall-user:
 	-systemctl --user disable --now $(UNIT)
-	rm -f $(USER_UNIT_DIR)/$(UNIT) $(USER_BINDIR)/password-layout
+	rm -f $(USER_UNIT_DIR)/$(UNIT) $(USER_UNIT_DIR)/$(DROPIN) $(USER_BINDIR)/password-layout
+	-rmdir $(USER_UNIT_DIR)/$(UNIT).d
 	rm -f $(USER_ADDON_LIBDIR)/libpasswordlayout.so $(USER_ADDON_CONFDIR)/passwordlayout.conf
 	systemctl --user daemon-reload
 
