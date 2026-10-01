@@ -37,9 +37,6 @@ public:
     // Paths of the terminals that printed or appeared since the last call.
     std::set<std::string> takeActive();
 
-    // Paths of every terminal being watched.
-    std::set<std::string> all() const;
-
 private:
     void watch(const char *name);
 
