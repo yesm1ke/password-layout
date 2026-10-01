@@ -59,6 +59,9 @@ other compositors are out of scope.
 
 - Hyprland, with a Latin layout somewhere in `kb_layout` (`us,ru`, `ru,us` and
   `us,de,ru` all work). With no Latin layout at all nothing is switched.
+  Layouts that fcitx5 switches (`keyboard-us`, `keyboard-ru` in its input
+  method list) are not handled; keep one there and the rest in `kb_layout`
+  (`password-layout doctor` warns about this).
 - `g++` with C++20 support and `make`. There are no library dependencies.
 - For password fields in graphical applications: fcitx5 running as the input
   method (Omarchy starts it by default), and its development files at build

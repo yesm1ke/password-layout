@@ -15,6 +15,8 @@ rewritten and they no longer match it. Their entries stay as a record.
   the Latin Kurdish variants no longer cause a needless switch.
 - `password-layout enter`/`leave` are documented for holding Latin from your
   own scripts.
+- `doctor` warns when keyboard layouts are switched by fcitx5 instead of
+  Hyprland, a setup that is not handled.
 
 ## 0.7.0 — 2026-10-01
 
