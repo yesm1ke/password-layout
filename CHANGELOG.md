@@ -3,7 +3,11 @@
 What changed for someone who installs the package. The day-to-day record is in
 [STATUS.md](STATUS.md).
 
-## 0.6.0 — 2026-10-01
+## 0.6.1 — unreleased
+
+The first release built by CI. The tag v0.6.0 exists but was never published:
+its CI run failed on a test that needed a terminal type the CI container does
+not set.
 
 - Releases are built, tested and published by GitHub Actions from the tag,
   instead of on the developer's machine.
