@@ -1,0 +1,17 @@
+#!/bin/bash
+# Prints the CHANGELOG.md section of one version, without its heading: the body
+# of the GitHub release.
+#
+# Usage: tools/release-notes 0.5.1
+
+set -euo pipefail
+cd "$(dirname "$0")/.."
+
+version=${1:?usage: tools/release-notes <version>}
+notes=$(awk -v heading="## $version " '
+  index($0, heading) == 1 { found = 1; next }
+  found && /^## / { exit }
+  found { print }
+' CHANGELOG.md | sed -e '/./,$!d')
+[[ -n $notes ]] || { echo "CHANGELOG.md has no notes for $version" >&2; exit 1; }
+printf '%s\n' "$notes"

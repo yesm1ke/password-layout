@@ -1,0 +1,7 @@
+# Keeps the commit SHAs that release.yml pins its actions to up to date.
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly

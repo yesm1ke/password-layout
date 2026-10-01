@@ -8,18 +8,25 @@ Updated with every change. The stages are described in [PLAN.md](PLAN.md).
 | 2. Survey of graphical applications | browsers done; Qt: blocked by an upstream fcitx5-qt bug (backlog) |
 | 3. fcitx5 addon | works in Zen and Chromium (checked by hand); released in 0.2.0 |
 | 4. Browser | not needed: Zen and Chromium mark password fields |
-| 5. Finishing | setup without manual steps, Latin layout by name, logging (0.4.0) |
+| 5. Finishing | setup without manual steps, Latin layout by name, logging (0.4.0); release pipeline on GitHub Actions (prepared, waiting for the signing key) |
 
 ## Next steps
 
-1. By hand, with a non-Latin layout active: connect somewhere over `ssh` with a
-   password; confirm the layout becomes Latin and comes back. `sudo` was
-   checked by typing on 2026-09-30.
-2. tmux: a prompt inside tmux is not recognised (confirmed). There is a way: tmux
-   reports which pane is on which terminal and which client is attached to which
-   session. To be done if tmux matters.
-3. Prompts that draw asterisks: deferred to the backlog.
-4. Start the survey of stage 2.
+Plan agreed on 2026-10-01: security, ease of use, releases built by CI.
+
+1. Release pipeline (in progress, see the journal): the maintainer runs
+   `tools/setup-release-key`, then 0.5.1 goes out through `tools/release` as
+   the first release built, signed and attested by GitHub Actions.
+2. Service and code hardening → 0.6.0: systemd sandboxing of the user unit
+   (checked with `systemd-analyze --user security` and live), holder names
+   limited to `[a-z0-9-]`, external commands by absolute path.
+3. `password-layout doctor` → 0.7.0: one command that checks Hyprland, the
+   Latin layout, the service, fcitx5 and the addon, fcitx5-qt's version and
+   sudo's `use_pty`, and explains what is wrong.
+4. When Arch ships fcitx5-qt 5.1.16: re-check KeePassXC, the polkit prompt and
+   the Omarchy lock screen (backlog).
+5. Prompts that draw asterisks, by foreground process name (backlog).
+6. By hand: an `ssh` password prompt typed with a non-Latin layout active.
 
 Deferred problems are in [BACKLOG.md](BACKLOG.md), resource measurements in
 [BENCHMARKS.md](BENCHMARKS.md).
@@ -405,3 +412,46 @@ needs only Hyprland and systemd.
 State at the end of the day: stage 1 is done, installed and running as
 `password-layout-tty.service`; 14 tests pass. Open: the check by typing, and the backlog: the silent prompt, prompts under
 `sudo`, the AUR, and a release procedure. The licence is MIT.
+
+### 2026-10-01
+
+#### Releases built by GitHub Actions
+
+Asked for by the user: tests on GitHub's public runners, for releases only,
+with a focus on security. Public repositories get the standard runners for
+free. The user chose a tag-only trigger and both kinds of verification: a
+GPG signature and a GitHub build attestation.
+
+- `.github/workflows/release.yml`, on a pushed `v*` tag only, all in an
+  `archlinux:base-devel` container: versions agree with the tag
+  (`tools/check-version`); tests with `-Werror` and again with ASan and UBSan
+  (the parsers read window titles, tmux output and `/proc`); the addon is
+  checked to follow only focus and capability events
+  (`tools/check-addon-events`, the promise in SECURITY.md); `makepkg` from the
+  tag as an unprivileged user, `.SRCINFO` compared with the PKGBUILD, `namcap`;
+  install, run and remove in a clean container with no systemd sessions; then
+  sign, attest and publish with notes from CHANGELOG.md
+  (`tools/release-notes`). The package is attached twice, once under a fixed
+  name for `releases/latest/download/`.
+- The signing job runs in the `release` environment, open to `v*` tags only,
+  and runs no code from the repository. Actions are pinned by commit SHA,
+  permissions are empty by default, Dependabot updates the pins monthly.
+- `tools/release X.Y.Z` runs the same tests on the committed code before it
+  bumps the version, dates the CHANGELOG section, tags and pushes: with a
+  tag-only trigger a failed tag cannot be reused. This replaces the manual
+  procedure that was in the backlog.
+- `tools/setup-release-key` makes a separate ed25519 key for releases only, in
+  a throwaway GnuPG home, puts it into the environment's secrets and the public
+  part into `packaging/arch/password-layout.asc` and keyserver.ubuntu.com. The
+  maintainer runs it: creating keys and writing secrets is not delegated.
+- PKGBUILD gained `check()` (the tests). New: SECURITY.md (what the addon and
+  the service see, checked against the code: terminals opened read-only, only
+  `AF_UNIX` sockets, logs carry layout numbers), CHANGELOG.md, a README install
+  section with both ways of checking the package.
+- Locally: 24 tests pass with `-O2 -Werror` (addon included) and with ASan and
+  UBSan. The workflow itself has not run yet; Docker here needs root, so the
+  container steps are first exercised by the 0.5.1 tag.
+- Not done, on purpose: pinning `fcitx5<5.2` in the PKGBUILD. An ABI break in
+  fcitx5 comes with a new soname, which keeps an old addon from loading rather
+  than crashing fcitx5, while a version pin would block fcitx5 updates for
+  the whole system.

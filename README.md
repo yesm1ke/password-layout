@@ -67,17 +67,45 @@ On Arch-based systems (Arch, Omarchy, …) install the package from the latest
 [release](https://github.com/yesm1ke/password-layout/releases):
 
 ```
-curl -LO https://github.com/yesm1ke/password-layout/releases/download/v0.5.0/password-layout-0.5.0-1-x86_64.pkg.tar.zst
-sudo pacman -U password-layout-0.5.0-1-x86_64.pkg.tar.zst
+curl -LO https://github.com/yesm1ke/password-layout/releases/latest/download/password-layout-x86_64.pkg.tar.zst
+sudo pacman -U password-layout-x86_64.pkg.tar.zst
 ```
 
 That is all. The service is enabled for every user by the package, and the
 install script starts it and restarts fcitx5 (so it loads the addon) in the
-sessions of users who are logged in; others get both at their next login. Up
-to 0.3.0 these were manual steps.
+sessions of users who are logged in; others get both at their next login.
 
-Download first: the package is not signed, and pacman insists on a signature
-when it is handed a URL, but not for a local file.
+To update, run the same two commands again. There are no automatic updates
+until the package is in the AUR; to hear about new versions, use "Watch →
+Custom → Releases" on GitHub.
+
+### Checking the package
+
+Releases are built from the tag by GitHub Actions, never on a personal machine,
+and every package can be checked in two independent ways.
+
+With the GitHub CLI, which confirms the file was built by this repository's
+release workflow:
+
+```
+gh attestation verify password-layout-x86_64.pkg.tar.zst -R yesm1ke/password-layout
+```
+
+With pacman itself: trust the release key once, and pacman verifies the
+signature on every install, so the URL can then be given to it directly:
+
+```
+sudo pacman-key --recv-keys @FINGERPRINT@
+sudo pacman-key --lsign-key @FINGERPRINT@
+sudo pacman -U https://github.com/yesm1ke/password-layout/releases/latest/download/password-layout-x86_64.pkg.tar.zst
+```
+
+The key is also in the repository, `packaging/arch/password-layout.asc`; it
+signs releases and nothing else. `SHA256SUMS` and its signature
+`SHA256SUMS.asc` are attached to every release as well. What the service and
+the addon can see is described in [SECURITY.md](SECURITY.md).
+
+### Other ways to install
 
 The attached package is built for x86_64. To build it yourself, on any
 architecture, use the recipe in `packaging/arch`:
@@ -203,6 +231,8 @@ in [BENCHMARKS.md](BENCHMARKS.md).
 - [STATUS.md](STATUS.md) — what is done, what was verified, what is next.
 - [BACKLOG.md](BACKLOG.md) — deferred problems.
 - [BENCHMARKS.md](BENCHMARKS.md) — resource use and how it was measured.
+- [CHANGELOG.md](CHANGELOG.md) — what changed in each release.
+- [SECURITY.md](SECURITY.md) — what it can see, and how to report a problem.
 
 ## License
 
