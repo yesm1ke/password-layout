@@ -26,9 +26,11 @@ layouts are allowed, and the switch there and back happens by itself.
   Latin one if none has been used yet;
 - when the password is done, the layout that was active before comes back.
 
-A layout counts as Latin unless its code is in the list of non-Latin layouts
-Omarchy itself uses (`ru`, `ua`, `gr`, `il`, `ara`, …); a `latin` variant, as in
-`rs(latin)`, counts as Latin. To know which Latin layout was last in use, the
+A layout counts as Latin if it types the letters a–z: every layout and
+variant of xkeyboard-config was measured once, and the result is a table in
+the code, with no library needed at run time ([which layouts count as
+Latin](https://github.com/yesm1ke/password-layout/wiki/Which-layouts-count-as-Latin)). German, Dvorak or Esperanto are
+Latin; Russian, Urdu or `us(rus)` are not. To know which Latin layout was last in use, the
 service follows layout switches through Hyprland's event socket.
 
 The same applies in terminals: a `sudo` or `ssh` password prompt counts as a

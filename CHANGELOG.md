@@ -6,6 +6,16 @@ What changed for someone who installs the package. Work in progress is in the
 The releases below, up to 0.6.2, were withdrawn on 2026-10-01: the history was
 rewritten and they no longer match it. Their entries stay as a record.
 
+## 0.7.1 — unreleased
+
+- Which layouts count as Latin is now measured, not guessed by layout code:
+  85 of xkeyboard-config's 597 layouts and variants were wrong before. Urdu,
+  Egyptian and Moroccan Arabic, Uzbek, Burmese, `us(rus)` and others no longer
+  pass for Latin, so a password is no longer typed in them; Indian English and
+  the Latin Kurdish variants no longer cause a needless switch.
+- `password-layout enter`/`leave` are documented for holding Latin from your
+  own scripts.
+
 ## 0.7.0 — 2026-10-01
 
 - Fixed: if fcitx5 died while a password field had focus, terminal prompts
