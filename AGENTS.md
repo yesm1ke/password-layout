@@ -38,9 +38,10 @@ Hyprland and restores the old layout after the last holder leaves.
 | `packaging/arch/` | PKGBUILD (the only place the version is kept), install script, the release public key |
 | `.github/workflows/` | `ci.yml` (every pull request and push to main), `build.yml` (tests, package, smoke test; shared), `release.yml` (`v*` tags: sign, attest, publish) |
 
-Plans, tasks and status live on GitHub, not in the repository: the pinned
-plan issue, milestones, and one issue per task (known limitations carry the
-label `limitation`). Background is in the [wiki](https://github.com/yesm1ke/password-layout/wiki): how it works, design
+Plans, tasks and status live on GitHub, not in the repository: milestones
+and one issue per task (known limitations carry the label `limitation`); a
+larger plan, when there is one, is a pinned issue. The last one, #36, is
+closed and shows how it was done. Background is in the [wiki](https://github.com/yesm1ke/password-layout/wiki): how it works, design
 decisions, measurements, the journal of the first two days. In the
 repository: [CHANGELOG.md](CHANGELOG.md), [SECURITY.md](SECURITY.md).
 
