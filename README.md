@@ -14,7 +14,7 @@ If you type in a non-Latin layout, you know the routine: `sudo` asks for a
 password, you type it blind, it is rejected, and only then do you notice the
 layout was wrong.
 
-![A sudo prompt in tmux: the layout goes from Russian to English while the prompt is up, and back after it](.github/demo.gif)
+![A command is pasted into a terminal in the Russian layout; at the password prompt the layout becomes English, and Russian comes back after Enter](.github/demo.gif)
 
 ## The rule
 
