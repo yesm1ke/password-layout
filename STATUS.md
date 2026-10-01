@@ -17,8 +17,8 @@ Plan agreed on 2026-10-01: security, ease of use, releases built by CI.
 1. Release pipeline and hardening are done on the `release-pipeline` branch
    and go out together as 0.6.0 (instead of a separate 0.5.1), through
    `tools/release` after the merge into main: the first release built, signed
-   and attested by GitHub Actions. Before the merge: tag ruleset and private
-   vulnerability reporting on GitHub.
+   and attested by GitHub Actions. Tag ruleset and private vulnerability
+   reporting are set up (journal); the branch is in review as a pull request.
 2. ~~Service and code hardening~~ — done, see the journal.
 3. ~~`password-layout doctor`~~ — done, goes out in 0.6.0 as well.
 4. When Arch ships fcitx5-qt 5.1.16: re-check KeePassXC, the polkit prompt and
@@ -523,3 +523,14 @@ user namespaces.
 
 Plan item 3 (no update check in `doctor`) kept: the service and the tool make
 no network requests.
+
+#### GitHub settings
+
+- Ruleset "Release tags" (active): creating, moving and deleting `refs/tags/v*`
+  is blocked for everyone but the repository admin role. A release tag is what
+  unlocks the `release` environment and its signing key, so only the
+  maintainer can start a release. The workflow does not create tags
+  (`gh release create --verify-tag`).
+- Private vulnerability reporting is on (SECURITY.md points to it).
+- No ruleset for main: not asked for yet; force-pushes to main were needed
+  once before.
