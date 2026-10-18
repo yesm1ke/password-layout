@@ -184,8 +184,8 @@ Finding checkFcitx() {
             return {Finding::Level::Warn,
                     "fcitx5 " + trim(*running) + " is running without the addon, which needs " +
                         *required + " or newer",
-                    "update the system (sudo pacman -Syu), or install a package built for this "
-                    "fcitx5"};
+                    "update the system (sudo pacman -Syu; on Omarchy: omarchy update), or install "
+                    "a package built for this fcitx5"};
         }
     }
     return {Finding::Level::Warn, "fcitx5 is running without the addon",
@@ -231,7 +231,7 @@ std::optional<Finding> checkFcitxQt() {
                        "(KeePassXC, the polkit prompt, possibly the lock screen) are not "
                        "recognised until focus moves",
                    "fixed in fcitx5-qt 5.1.16, which Arch and Omarchy ship: update the system "
-                   "(sudo pacman -Syu)"};
+                   "(sudo pacman -Syu; on Omarchy: omarchy update)"};
 }
 
 std::optional<Finding> checkSudo() {
