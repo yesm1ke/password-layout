@@ -6,6 +6,13 @@ What changed for someone who installs the package. Work in progress is in the
 The releases below, up to 0.6.2, were withdrawn on 2026-10-01: the history was
 rewritten and they no longer match it. Their entries stay as a record.
 
+## 0.7.2 — unreleased
+
+- Qt windows that open with a password field already focused (KeePassXC, the
+  polkit prompt, the lock screen) now switch the layout too, with fcitx5-qt
+  5.1.16, which Arch and Omarchy now ship. `doctor` tells you to update the
+  system if yours is older.
+
 ## 0.7.1 — 2026-10-01
 
 - Which layouts count as Latin is now measured, not guessed by layout code:
