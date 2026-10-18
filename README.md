@@ -41,7 +41,7 @@ keyboard.
   Ghostty and foot); tmux panes too.
 - **Graphical applications**: password fields that are marked for the input
   method, through an addon for fcitx5. Zen (Firefox-based) and Chromium do
-  this; Qt applications too, with one bug in fcitx5-qt
+  this; Qt applications too, with fcitx5-qt 5.1.16 or newer
   ([#7](https://github.com/yesm1ke/password-layout/issues/7)). Electron password
   managers are not checked yet ([#8](https://github.com/yesm1ke/password-layout/issues/8)).
 

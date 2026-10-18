@@ -230,7 +230,8 @@ std::optional<Finding> checkFcitxQt() {
                        ": Qt windows that open with a password field already focused "
                        "(KeePassXC, the polkit prompt, possibly the lock screen) are not "
                        "recognised until focus moves",
-                   "fixed upstream in fcitx5-qt 5.1.16; update once your distribution ships it"};
+                   "fixed in fcitx5-qt 5.1.16, which Arch and Omarchy ship: update the system "
+                   "(sudo pacman -Syu)"};
 }
 
 std::optional<Finding> checkSudo() {
