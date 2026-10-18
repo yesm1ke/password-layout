@@ -159,8 +159,10 @@ All of them: [label `limitation`](https://github.com/yesm1ke/password-layout/iss
 
 ## Resource use
 
-About 0.5 MB of its own memory, no wakeups while terminals are quiet, roughly
-0.05% of one core while a terminal prints continuously
+About 0.5 MB of its own memory and no timers: while terminals are quiet it
+only wakes for a moment when Hyprland reports something (a window title
+changes, focus moves). Roughly 0.05% of one core while a terminal prints
+continuously
 ([measurements](https://github.com/yesm1ke/password-layout/wiki/Resource-use)).
 
 ## More
