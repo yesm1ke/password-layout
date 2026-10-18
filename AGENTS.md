@@ -12,7 +12,8 @@ afterwards the previous layout comes back. Two sources notice a password:
   "echo off, line input on" mode, owned by the focused window (tmux panes
   included);
 - **graphical applications**: the fcitx5 addon sees a focused field with the
-  Password capability.
+  Password capability (or, from Qt Quick since Qt 6.12, Sensitive with
+  NoSpellCheck and NoAutoUpperCase).
 
 Both call into one shared state (`src/state.*`), which switches through
 Hyprland and restores the old layout after the last holder leaves.

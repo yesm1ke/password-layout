@@ -14,7 +14,7 @@ password field. It does not subscribe to key events, so it never sees what you
 type. `tools/check-addon-events`, run by CI on every change, fails if the
 addon's source names any other event type or a key event. It is a guard
 against an accidental change, not a proof: read
-`src/fcitx/passwordlayout.cpp` (about 110 lines) to check for yourself.
+`src/fcitx/passwordlayout.cpp` (about 120 lines) to check for yourself.
 
 **The terminal service** (`password-layout watch-tty`) reads, for terminals that
 just printed something:
