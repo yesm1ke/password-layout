@@ -1,7 +1,8 @@
 // fcitx5 addon: Latin keyboard layout while a password field has focus.
 //
 // Applications tell the input method what kind of field has focus. Browsers
-// and toolkits mark password fields with the Password capability, which is the
+// and toolkits mark password fields with the Password capability (Qt Quick,
+// since Qt 6.12, with a set of others; see isPasswordField), which is the
 // same fact macOS acts on when it turns on secure input. This addon follows
 // focus and that flag and tells the shared state (src/state.*) when Latin is
 // needed, under the holder name "im".
@@ -54,6 +55,18 @@ void apply(bool latin) {
     }
 }
 
+// Since Qt 6.12, a Qt Quick field with echoMode Password no longer carries the
+// Password capability (QTBUG-88367), only Sensitive, NoSpellCheck and
+// NoAutoUpperCase. Sensitive alone is not enough: Chromium sets it on every
+// field of an incognito window, through a frontend that never sets the other
+// two.
+bool isPasswordField(fcitx::CapabilityFlags flags) {
+    using fcitx::CapabilityFlag;
+    return flags.test(CapabilityFlag::Password) ||
+           (flags.test(CapabilityFlag::Sensitive) && flags.test(CapabilityFlag::NoSpellCheck) &&
+            flags.test(CapabilityFlag::NoAutoUpperCase));
+}
+
 class PasswordLayout : public fcitx::AddonInstance {
 public:
     explicit PasswordLayout(fcitx::Instance *instance) {
@@ -75,8 +88,7 @@ private:
     void update(fcitx::InputContext *ic, bool leaving) {
         PASSWORDLAYOUT_DEBUG() << (leaving ? "focus out" : "focus in or capability change")
                                << " program=" << ic->program() << " focus=" << ic->hasFocus()
-                               << " password="
-                               << ic->capabilityFlags().test(fcitx::CapabilityFlag::Password);
+                               << " password=" << isPasswordField(ic->capabilityFlags());
         if (leaving) {
             // Focus moving between fields sends a focus-out before the next
             // focus-in; the worker only acts on where it ends up.
@@ -90,7 +102,7 @@ private:
             return; // a capability change of a field in the background
         }
         focused_ = ic;
-        worker_.want(ic->capabilityFlags().test(fcitx::CapabilityFlag::Password));
+        worker_.want(isPasswordField(ic->capabilityFlags()));
     }
 
     fcitx::InputContext *focused_ = nullptr;

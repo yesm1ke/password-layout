@@ -12,6 +12,9 @@ rewritten and they no longer match it. Their entries stay as a record.
   polkit prompt, the lock screen) now switch the layout too, with fcitx5-qt
   5.1.16, which Arch and Omarchy now ship. `doctor` tells you to update the
   system if yours is older.
+- Password fields in Qt Quick applications (the Omarchy polkit prompt and lock
+  screen) are recognised again with Qt 6.12, which no longer marks them the
+  way it used to.
 
 ## 0.7.1 — 2026-10-01
 

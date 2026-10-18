@@ -2,9 +2,10 @@
 """Pretend to be an application with a focused input field, over fcitx5's D-Bus
 input-method interface, to test the addon without clicking around.
 
-Usage: tools/fake-field [--password] [seconds]
+Usage: tools/fake-field [--password | --qt-quick] [seconds]
 
-Creates an input context, marks it as a password field if asked, focuses it
+Creates an input context, marks it as a password field if asked (--qt-quick:
+the way Qt 6.12 marks a Qt Quick one, without the Password flag), focuses it
 for the given time (default 3 s), then drops focus and exits.
 """
 
@@ -17,9 +18,10 @@ gi.require_version("Gio", "2.0")
 from gi.repository import Gio, GLib
 
 PASSWORD = 1 << 3
+QT_QUICK = (1 << 36) | (1 << 17) | (1 << 11)  # Sensitive, NoSpellCheck, NoAutoUpperCase
 
 args = sys.argv[1:]
-password = "--password" in args
+capability = PASSWORD if "--password" in args else QT_QUICK if "--qt-quick" in args else 0
 seconds = float(next((a for a in args if not a.startswith("--")), 3))
 
 bus = Gio.bus_get_sync(Gio.BusType.SESSION)
@@ -36,9 +38,9 @@ reply = call("/org/freedesktop/portal/inputmethod", "org.fcitx.Fcitx.InputMethod
 context = reply.unpack()[0]
 ic = "org.fcitx.Fcitx.InputContext1"
 
-call(context, ic, "SetCapability", "(t)", PASSWORD if password else 0)
+call(context, ic, "SetCapability", "(t)", capability)
 call(context, ic, "FocusIn")
-print(f"focused a {'password' if password else 'plain'} field for {seconds:g} s", flush=True)
+print(f"focused a {'password' if capability else 'plain'} field for {seconds:g} s", flush=True)
 time.sleep(seconds)
 call(context, ic, "FocusOut")
 call(context, ic, "DestroyIC")
