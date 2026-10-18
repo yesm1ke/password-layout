@@ -6,7 +6,7 @@ What changed for someone who installs the package. Work in progress is in the
 The releases below, up to 0.6.2, were withdrawn on 2026-10-01: the history was
 rewritten and they no longer match it. Their entries stay as a record.
 
-## 0.7.2 — unreleased
+## 0.7.2 — 2026-10-18
 
 - Qt windows that open with a password field already focused (KeePassXC, the
   polkit prompt, the lock screen) now switch the layout too, with fcitx5-qt
