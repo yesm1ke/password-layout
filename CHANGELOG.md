@@ -6,7 +6,7 @@ What changed for someone who installs the package. Work in progress is in the
 The releases below, up to 0.6.2, were withdrawn on 2026-10-01: the history was
 rewritten and they no longer match it. Their entries stay as a record.
 
-## 0.8.0 — unreleased
+## 0.8.0 — 2026-10-28
 
 - The service and the logic of the fcitx5 addon are now written in Rust;
   building needs cargo. No change in behaviour: the same files are installed,
