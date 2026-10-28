@@ -1,0 +1,5 @@
+# keys: active_layout_index
+{"keyboards": [
+    {"name": "virtual", "layout": "us", "variant": "", "main": false},
+    {"name": "real", "layout": "us,ru", "variant": ",", "main": false},
+    {"name": "sleep-button", "layout": "us,ru", "variant": ",", "main": true}]}

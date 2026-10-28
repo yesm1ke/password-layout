@@ -57,8 +57,9 @@ other compositors are out of scope.
   method list) are not handled; keep them in `kb_layout`.
 - For password fields in graphical applications: fcitx5 running as the input
   method.
-- systemd, for the user service. To build: `g++` with C++20 and `make`, and
-  fcitx5's development files for the addon. No other libraries.
+- systemd, for the user service. To build: Rust with `cargo` 1.89 or newer,
+  `g++` with C++20 and fcitx5's development files for the addon, `make`, and
+  `tmux` for the tests. No other libraries.
 
 ## Install
 
@@ -80,6 +81,7 @@ The package is not in the AUR yet ([#11](https://github.com/yesm1ke/password-lay
 ```
 git clone https://github.com/yesm1ke/password-layout
 cd password-layout
+make test             # the tests
 make install-user     # for the current user, no root: ~/.local, service enabled
 make uninstall-user
 ```

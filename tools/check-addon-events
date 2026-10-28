@@ -2,18 +2,35 @@
 # SECURITY.md promises that the fcitx5 addon never sees key presses: it follows
 # only focus and the capability flags of the focused field. Every key press goes
 # through fcitx5, so this is checked on every release rather than trusted.
+#
+# Checked: the C++ addon, the C++ shim of the Rust addon (rust/password-layout-
+# addon/shim), and the Rust side of that addon, which gets no fcitx5 events at
+# all and must not mention key events either.
 
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
-addon=src/fcitx/passwordlayout.cpp
 allowed='InputContextFocusIn|InputContextFocusOut|InputContextCapabilityChanged'
+keys='KeyEvent|keyEvent|InputContextKey'
 
-events=$(grep -o 'EventType::[A-Za-z]*' "$addon" | sed 's/EventType:://' | sort -u)
-bad=$(grep -vxE "$allowed" <<<"$events" || true)
-if [[ -n $bad ]] || grep -qE 'KeyEvent|keyEvent|InputContextKey' "$addon"; then
-  echo "The addon handles events beyond focus and capabilities:" >&2
-  echo "${bad:-(key event types referenced)}" >&2
+for addon in src/fcitx/passwordlayout.cpp rust/password-layout-addon/shim/passwordlayout.cpp; do
+  [[ -f $addon ]] || continue
+  events=$(grep -o 'EventType::[A-Za-z]*' "$addon" | sed 's/EventType:://' | sort -u)
+  bad=$(grep -vxE "$allowed" <<<"$events" || true)
+  if [[ -n $bad ]] || grep -qE "$keys" "$addon"; then
+    echo "$addon handles events beyond focus and capabilities:" >&2
+    echo "${bad:-(key event types referenced)}" >&2
+    exit 1
+  fi
+  echo "addon events ($addon): $(tr '\n' ' ' <<<"$events")"
+done
+
+rust_side=()
+for dir in rust/password-layout-addon/src rust/password-layout-addon/include; do
+  [[ -d $dir ]] && rust_side+=("$dir")
+done
+if [[ ${#rust_side[@]} -gt 0 ]] && grep -rqE "$keys|EventType" "${rust_side[@]}"; then
+  echo "The Rust side of the addon refers to fcitx5 events:" >&2
+  grep -rnE "$keys|EventType" "${rust_side[@]}" >&2
   exit 1
 fi
-echo "addon events: $(tr '\n' ' ' <<<"$events")"

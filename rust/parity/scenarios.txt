@@ -1,0 +1,33 @@
+# Stage 1 parity scenarios: each line is "INDEX LATIN OP..." (see the
+# "Parity check" section of the wiki page "Rust rewrite"). Blank lines
+# and lines starting with # are skipped.
+
+# switch and back: Russian active, enter switches to US (0), leave restores 1
+1 10 enter:tty leave:tty
+# already Latin: nothing to do, as macOS
+0 10 enter:tty leave:tty
+# several holders: the layout comes back only after the last leave
+1 10 enter:tty enter:im leave:tty leave:im
+# leave without enter: ignored, nothing written
+1 10 leave:tty
+# invalid holder names: rejected on both enter and leave
+1 10 enter:tty enter:Tty leave:Tty leave:tty
+# stale holder: "im" left over from a dead process, the user switched back
+# by hand; a new prompt switches nothing, the restarted source leaves first
+1 10 enter:im set:1 enter:tty leave:tty leave:im enter:tty leave:tty
+# no Latin layout: nothing happens at all
+0 00 enter:tty leave:tty
+# Latin is the second layout
+0 01 enter:tty leave:tty
+# a Latin layout in the middle is already active: nothing to do
+1 110 enter:tty leave:tty
+# the last Latin layout used is remembered (German, then Russian by hand)
+1 110 note set:2 note enter:tty leave:tty
+# remembered layout that is gone: the config changed, layout 1 is no longer Latin
+1 11 note latin:10 enter:tty leave:tty
+# the same holder twice: one enter and one leave
+1 10 enter:tty enter:tty leave:tty leave:tty
+# no layouts at all (empty LATIN field)
+1  enter:tty leave:tty
+# the user switches by hand while a holder is up
+1 10 enter:tty set:1 leave:tty

@@ -7,14 +7,15 @@ without reading the code.
 
 ## What it sees
 
-**The fcitx5 addon** (`src/fcitx/passwordlayout.cpp`) subscribes to exactly
-three fcitx5 events: a field gained focus, lost focus, or changed its
-capability flags. From them it learns one fact: whether the focused field is a
-password field. It does not subscribe to key events, so it never sees what you
-type. `tools/check-addon-events`, run by CI on every change, fails if the
-addon's source names any other event type or a key event. It is a guard
-against an accidental change, not a proof: read
-`src/fcitx/passwordlayout.cpp` (about 120 lines) to check for yourself.
+**The fcitx5 addon** (`rust/password-layout-addon/shim/passwordlayout.cpp`)
+subscribes to exactly three fcitx5 events: a field gained focus, lost focus, or
+changed its capability flags. From them it learns one fact: whether the
+focused field is a password field. It does not subscribe to key events, so it
+never sees what you type. `tools/check-addon-events`, run by CI on every
+change, fails if the addon's source names any other event type or a key event.
+It is a guard against an accidental change, not a proof: read the shim
+(about 120 lines) to check for yourself. The rest of the addon — the worker,
+the Hyprland client and the state — is the same Rust code the service runs.
 
 **The terminal service** (`password-layout watch-tty`) reads, for terminals that
 just printed something:

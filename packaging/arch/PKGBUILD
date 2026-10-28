@@ -8,7 +8,7 @@ arch=('x86_64' 'aarch64')
 url="https://github.com/yesm1ke/password-layout"
 license=('MIT')
 depends=('gcc-libs' 'glibc' 'hyprland' 'fcitx5')
-makedepends=('git')
+makedepends=('git' 'cargo')
 # The tests start a private tmux server.
 checkdepends=('tmux')
 install=password-layout.install
@@ -17,13 +17,21 @@ install=password-layout.install
 source=("$pkgname::git+$url.git#tag=v$pkgver")
 sha256sums=('SKIP')
 
+prepare() {
+  cd "$pkgname/rust"
+  export RUSTUP_TOOLCHAIN=stable
+  cargo fetch --locked --target "$(rustc -vV | sed -n 's/host: //p')"
+}
+
 build() {
   cd "$pkgname"
+  export RUSTUP_TOOLCHAIN=stable CARGOFLAGS=--frozen
   make
 }
 
 check() {
   cd "$pkgname"
+  export RUSTUP_TOOLCHAIN=stable CARGOFLAGS=--frozen
   make test
 }
 

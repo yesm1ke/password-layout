@@ -1,0 +1,14 @@
+# Extra classify lines beyond tests/xkb-latin.tsv: "LAYOUTS<TAB>VARIANTS".
+us,ru
+ru,us
+ua,ru,de	,,
+rs,rs	,latin
+us,de,ru	,phonetic,
+in,ru	in(eng),
+us,ru	rus,
+ru,us	,latin
+ua,ua	,crh
+us,ru,ru,,
+ru,us,de,fr
+ru	,
+,,
