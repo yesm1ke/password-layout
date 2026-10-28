@@ -6,10 +6,15 @@ What changed for someone who installs the package. Work in progress is in the
 The releases below, up to 0.6.2, were withdrawn on 2026-10-01: the history was
 rewritten and they no longer match it. Their entries stay as a record.
 
-## unreleased
+## 0.8.0 — unreleased
 
 - The service and the logic of the fcitx5 addon are now written in Rust;
-  building needs cargo. No change in behaviour.
+  building needs cargo. No change in behaviour: the same files are installed,
+  the state file is the same, so the upgrade needs only a restart of the
+  service and fcitx5 (`password-layout doctor` tells you).
+- The service uses less memory (Rss 2.7 MB instead of 4.4 MB; it no longer
+  loads libstdc++), at the same idle cost. How it was checked against 0.7.2:
+  the wiki page [Rust rewrite](https://github.com/yesm1ke/password-layout/wiki/Rust-rewrite).
 
 ## 0.7.2 — 2026-10-18
 
