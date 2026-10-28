@@ -1,0 +1,5 @@
+# keys: active_layout_index
+{"keyboards": [
+    {"name": "k1", "layout": "a", "variant": "v1", "active_layout_index": 0},
+    {"name": "k2", "layout": "b", "variant": "v2", "active_layout_index": 1},
+    {"name": "k3", "layout": "b", "active_layout_index": 0}]}

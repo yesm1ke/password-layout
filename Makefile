@@ -2,6 +2,18 @@ CXX ?= g++
 CXXFLAGS ?= -O2
 CXXFLAGS += -std=c++20 -Wall -Wextra -Isrc
 
+# The Rust side: cargo builds the binary, the tests and the addon's static
+# library; g++ only links the addon's .so (the C++ shim) and the C++
+# reference (the `cpp`/`test-cpp` targets).
+CARGO ?= cargo
+# --locked: Cargo.lock is the pin; the PKGBUILD passes --frozen.
+CARGOFLAGS ?= --locked
+CARGO_TARGET_DIR ?= $(CURDIR)/rust/target
+export CARGO_TARGET_DIR
+RUST_OUT := $(CARGO_TARGET_DIR)/release
+ADDON_ARCHIVE := $(RUST_OUT)/libpassword_layout_addon.a
+SHIM := rust/password-layout-addon/shim
+
 # Packaging: make DESTDIR=... PREFIX=/usr install
 PREFIX ?= /usr/local
 BINDIR := $(PREFIX)/bin
@@ -38,16 +50,48 @@ USER_ADDON_CONFDIR := $(HOME)/.local/share/fcitx5/addon
 LIB_SOURCES := src/activity.cpp src/compositor.cpp src/doctor.cpp src/state.cpp src/tmux.cpp src/tty.cpp src/watch.cpp
 HEADERS := $(wildcard src/*.h src/fcitx/*.h)
 
-.PHONY: all test bench install uninstall install-user uninstall-user clean
+.PHONY: all test bench bench-cpp cpp test-cpp install uninstall install-user uninstall-user clean FORCE
 
 all: build/password-layout $(ADDON)
 
-build/password-layout: src/main.cpp $(LIB_SOURCES) $(HEADERS)
+# cargo knows the Rust dependencies; make asks it every time.
+build/password-layout: FORCE
+	cd rust && $(CARGO) build --release $(CARGOFLAGS) -p password-layout
 	@mkdir -p build
+	cp $(RUST_OUT)/password-layout $@
+
+$(ADDON_ARCHIVE): FORCE
+	cd rust && $(CARGO) build --release $(CARGOFLAGS) -p password-layout-addon
+
+# The shim and the static library into one .so. -Wl,--exclude-libs,ALL keeps
+# the Rust and C-interface symbols out of the exports; -Wl,-z,defs makes a
+# missing symbol a link error. The last list is
+# `cargo rustc --print native-static-libs` on this toolchain.
+# FORCE: a no-op `cargo build` does not touch the archive, so the .so would
+# otherwise not pick up new CXXFLAGS; relinking is cheap.
+build/libpasswordlayout.so: FORCE $(SHIM)/passwordlayout.cpp $(ADDON_ARCHIVE) rust/password-layout-addon/include/password_layout_addon.h
+	@mkdir -p build
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(shell pkg-config --cflags Fcitx5Core) -fPIC -shared $(LDFLAGS) \
+		-Irust/password-layout-addon/include \
+		-o $@ $(SHIM)/passwordlayout.cpp $(ADDON_ARCHIVE) \
+		$(shell pkg-config --libs Fcitx5Core) \
+		-Wl,--exclude-libs,ALL -Wl,--gc-sections -Wl,-z,defs \
+		-lgcc_s -lutil -lrt -lpthread -lm -ldl -lc
+
+build/load-test: $(SHIM)/load_test.cpp
+	@mkdir -p build
+	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) -o $@ $< -ldl
+
+# The C++ reference: the pre-Rust sources, for comparison and for the
+# sanitizer runs (see the wiki page "Rust rewrite").
+cpp: build/cpp/password-layout $(if $(FCITX_VERSION),build/cpp/libpasswordlayout.so)
+
+build/cpp/password-layout: src/main.cpp $(LIB_SOURCES) $(HEADERS)
+	@mkdir -p $(dir $@)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) -o $@ src/main.cpp $(LIB_SOURCES)
 
-build/libpasswordlayout.so: src/fcitx/passwordlayout.cpp src/compositor.cpp src/state.cpp $(HEADERS)
-	@mkdir -p build
+build/cpp/libpasswordlayout.so: src/fcitx/passwordlayout.cpp src/compositor.cpp src/state.cpp $(HEADERS)
+	@mkdir -p $(dir $@)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(shell pkg-config --cflags Fcitx5Core) -fPIC -shared $(LDFLAGS) \
 		-o $@ src/fcitx/passwordlayout.cpp src/compositor.cpp src/state.cpp \
 		$(shell pkg-config --libs Fcitx5Core)
@@ -60,21 +104,44 @@ build/system/passwordlayout.conf build/user/passwordlayout.conf: src/fcitx/passw
 		-e 's|@LIBRARY@|$(if $(findstring user,$@),$(USER_ADDON_LIBDIR)/libpasswordlayout,libpasswordlayout)|' \
 		$< > $@
 
-build/tests: tests/test.cpp $(LIB_SOURCES) $(HEADERS)
-	@mkdir -p build
+build/cpp/tests: tests/test.cpp $(LIB_SOURCES) $(HEADERS)
+	@mkdir -p $(dir $@)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) -o $@ tests/test.cpp $(LIB_SOURCES)
 
-test: build/tests
-	./build/tests
+test: all $(if $(ADDON),build/load-test)
+	cd rust && $(CARGO) test $(CARGOFLAGS)
+	$(if $(ADDON),./build/load-test $(ADDON))
 
-# Figures and method are in the wiki (https://github.com/yesm1ke/password-layout/wiki/Resource-use). The loop benchmark and the service
-# measurement run side by side so both see the same terminal load.
-bench: build/bench-loop build/bench-pass
-	./build/bench-pass
-	./bench/service.sh 30 & ./build/bench-loop; wait
+test-cpp: build/cpp/tests
+	./build/cpp/tests
 
-build/bench-%: bench/%.cpp $(LIB_SOURCES) $(HEADERS)
-	@mkdir -p build
+# Figures and method are in the wiki (https://github.com/yesm1ke/password-layout/wiki/Resource-use).
+# The idle cost: bench/idle.sh over the C++ and the Rust binary, idle and with
+# a prompt, against the Rust fake Hyprland.
+BENCH_SECONDS ?= 30
+BENCH_DRIVER := $(RUST_OUT)/examples/parity_driver
+
+bench: all cpp $(BENCH_DRIVER)
+	@for f in build/password-layout build/cpp/password-layout build/libpasswordlayout.so build/cpp/libpasswordlayout.so; do \
+	  if [ -f "$$f" ]; then ls -l "$$f"; size "$$f"; fi; done
+	@echo "== C++ (build/cpp/password-layout) =="
+	./bench/idle.sh build/cpp/password-layout $(BENCH_SECONDS)
+	./bench/idle.sh build/cpp/password-layout $(BENCH_SECONDS) prompt
+	@echo "== Rust (build/password-layout) =="
+	./bench/idle.sh build/password-layout $(BENCH_SECONDS)
+	./bench/idle.sh build/password-layout $(BENCH_SECONDS) prompt
+
+$(BENCH_DRIVER): FORCE
+	cd rust && $(CARGO) build --release $(CARGOFLAGS) -p password-layout-core --example parity_driver
+
+# The C++ micro-benchmarks (loop and pass) and the service measurement run
+# side by side so both see the same terminal load.
+bench-cpp: build/cpp/bench-loop build/cpp/bench-pass
+	./build/cpp/bench-pass
+	./bench/service.sh 30 & ./build/cpp/bench-loop; wait
+
+build/cpp/bench-%: bench/%.cpp $(LIB_SOURCES) $(HEADERS)
+	@mkdir -p $(dir $@)
 	$(CXX) $(CPPFLAGS) $(CXXFLAGS) $(LDFLAGS) -o $@ $< $(LIB_SOURCES)
 
 # The unit has to name the binary by absolute path, which differs per install.
@@ -130,3 +197,4 @@ uninstall-user:
 
 clean:
 	rm -rf build
+	cd rust && $(CARGO) clean

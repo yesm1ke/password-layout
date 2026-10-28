@@ -1,0 +1,3 @@
+[workspace]
+resolver = "2"
+members = ["password-layout-core", "password-layout", "password-layout-addon"]

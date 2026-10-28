@@ -1,0 +1,14 @@
+[package]
+name = "password-layout-addon"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.89"
+
+# staticlib: linked into the fcitx5 addon (libpasswordlayout.so) by the C++
+# shim in shim/; rlib: for the tests. See the wiki page "Rust rewrite".
+[lib]
+name = "password_layout_addon"
+crate-type = ["staticlib", "rlib"]
+
+[dependencies]
+password-layout-core = { path = "../password-layout-core" }

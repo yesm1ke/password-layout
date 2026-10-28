@@ -15,24 +15,20 @@ afterwards the previous layout comes back. Two sources notice a password:
   Password capability (or, from Qt Quick since Qt 6.12, Sensitive with
   NoSpellCheck and NoAutoUpperCase).
 
-Both call into one shared state (`src/state.*`), which switches through
-Hyprland and restores the old layout after the last holder leaves.
+Both call into one shared state (`rust/password-layout-core/src/state.rs`),
+which switches through Hyprland and restores the old layout after the last
+holder leaves.
 
 ## Where things are
 
 | Path | What |
 |---|---|
-| `src/main.cpp` | subcommands (`watch-tty`, `enter`, `leave`, `status`, `doctor`) and the service loop |
-| `src/watch.*` | `PromptWatcher` (is a prompt up, is it in the focused window) and `nextPace` (second look, polling, sleeping) |
-| `src/tty.*` | prompt detection by terminal mode; process tree; which window owns a pty |
-| `src/activity.*` | inotify on `/dev/pts` and `/dev/tty`: wakes the service only when terminals print |
-| `src/tmux.*` | asks tmux which pane is visible in which client |
-| `src/compositor.*` | Hyprland socket: layouts, switching, focused window; minimal JSON reading; which layouts are Latin (measured tables, `tests/xkb-latin.tsv`, `tools/xkb-latin.c`) |
-| `src/state.*` | holders (`tty`, `im`) and the layout to restore, in `$XDG_RUNTIME_DIR/password-layout/` |
-| `src/doctor.*` | `password-layout doctor`: checks the setup, explains problems |
-| `src/fcitx/` | the fcitx5 addon (`libpasswordlayout.so`), its description template, and `worker.h` (the thread that applies the latest wish; no fcitx5 dependency, tested directly) |
+| `rust/password-layout-core/` | the shared library: Hyprland socket (layouts, switching, focused window; minimal JSON reading), which layouts are Latin (measured tables, `tests/xkb-latin.tsv`, `tools/xkb-latin.c`), the state (holders `tty`, `im`, and the layout to restore, in `$XDG_RUNTIME_DIR/password-layout/`), and the pacing; std only |
+| `rust/password-layout/` | the `password-layout` binary: subcommands (`watch-tty`, `enter`, `leave`, `status`, `doctor`) and the service loop; `watch.rs` (is a prompt up, is it in the focused window), `tty.rs` (prompt detection by terminal mode; process tree; which window owns a pty), `activity.rs` (inotify on `/dev/pts` and `/dev/tty`: wakes the service only when terminals print), `tmux.rs` (which pane is visible in which client), `doctor.rs` |
+| `rust/password-layout-addon/` | the fcitx5 addon (`libpasswordlayout.so`): `shim/passwordlayout.cpp` (the factory and the focus/capability watchers; the C++ the addon needs) plus the Rust worker (`src/worker.rs`, `src/ffi.rs`, `include/password_layout_addon.h`) linked in as a static library — the thread that applies the latest wish, tested directly |
+| `rust/parity/` | `run.sh`: the C++ reference and the Rust side, driven the same way, must produce the same output (scenarios, JSON fixtures, fake Hyprland cases) |
+| `src/`, `tests/test.cpp` | the C++ reference, kept for the parity check, its own test suite (`make test-cpp`) and the bench; built only by `make cpp`/`make test-cpp`, never installed; `tests/test.cpp` holds all the C++ tests, one binary, no framework |
 | `systemd/` | the user unit and its sandbox drop-in |
-| `tests/test.cpp` | all tests, one binary, no framework |
 | `bench/` | resource measurements (`make bench`; results in the [wiki](https://github.com/yesm1ke/password-layout/wiki/Resource-use)) |
 | `tools/` | `release`, `check-version`, `release-notes`, `check-addon-events` (release/CI); `fake-field`, `fcitx-watch` (live checks); `setup-release-key` (maintainer only) |
 | `packaging/arch/` | PKGBUILD (the only place the version is kept), install script, the release public key |
@@ -48,21 +44,26 @@ decisions, measurements) is in the [wiki](https://github.com/yesm1ke/password-la
 ```
 make                     # build/password-layout; build/libpasswordlayout.so if fcitx5 headers exist
 make test                # all tests; some use real ptys and a private tmux server
-CXXFLAGS="-O2 -Werror" make test
-make clean && CXXFLAGS="-O1 -g -fsanitize=address,undefined" LDFLAGS="-fsanitize=address,undefined" make test
+env -u TERM make test    # CI has no TERM
+cd rust && cargo clippy --all-targets -- -D warnings && cargo fmt --check
+rust/parity/run.sh       # the C++ reference and the Rust side behave the same
+make test-cpp            # the C++ reference test suite
 tools/check-addon-events
+make bench               # the idle-cost [measurements](https://github.com/yesm1ke/password-layout/wiki/Resource-use)
 ```
 
 Pass `CXXFLAGS`/`LDFLAGS` through the environment, not as `make` arguments:
-the Makefile appends `-std=c++20 -Isrc` to them. Run the tests with
-`env -u TERM` as well; CI has no `TERM`. Needs g++ with C++20, make, tmux, and
-fcitx5 development files for the addon. C++20, no third-party libraries:
-keep it that way (the service runs all the time; memory and wakeups matter).
+the Makefile appends `-std=c++20 -Isrc` to them (the shim and the C++
+reference). Needs cargo 1.89 or newer, g++ with C++20, make, tmux, and
+fcitx5 development files for the addon. Rust is std only; `libc` is in the
+binary crate (`rust/password-layout`) only, and every `unsafe` block is one
+operation with a `// SAFETY:` comment (wiki: Rust rewrite,
+decision 7). Keep it that way (the service runs all the time; memory and
+wakeups matter).
 
 `make install` puts files in place and honours `DESTDIR` and `PREFIX`;
 `make install-user` installs into `~/.local` for one user. The Arch package
-builds from the release tag: `cd packaging/arch && makepkg -si`. `make bench`
-repeats the [measurements](https://github.com/yesm1ke/password-layout/wiki/Resource-use).
+builds from the release tag: `cd packaging/arch && makepkg -si`.
 
 ## Checking on a live desktop
 
@@ -96,7 +97,8 @@ Hyprland session, with a non-Latin layout active.
 - **Sandbox options that need user namespaces** go in
   `systemd/sandbox-namespaces.conf`, not in the unit, so that kernels without
   them can mask just that file. Inside a user namespace another process's
-  `/proc/<pid>/exe` is not accessible (see `clientFor` in `src/tmux.cpp`).
+  `/proc/<pid>/exe` is not accessible (see `client_for` in
+  `rust/password-layout/src/tmux.rs`).
 - **The addon asks fcitx5 for its series** (`core:5.1.0`), not the exact build
   version: fcitx5 silently skips an addon that asks for a newer core.
 - **Issue forms**: GitHub rejects a form whose field labels contain words such

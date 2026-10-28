@@ -26,7 +26,7 @@ jobs:
       contents: read
     steps:
       - name: Install build dependencies
-        run: pacman -Syu --noconfirm --needed git fcitx5 tmux
+        run: pacman -Syu --noconfirm --needed git fcitx5 tmux rust
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -42,6 +42,18 @@ jobs:
           CXXFLAGS="-O2 -Werror" make
           CXXFLAGS="-O2 -Werror" make test
 
+      - name: Rust lints
+        run: |
+          cd rust
+          cargo clippy --all-targets --locked -- -D warnings
+          cargo fmt --check
+
+      - name: Parity with the C++ reference
+        run: rust/parity/run.sh
+
+      - name: C++ reference tests
+        run: make test-cpp
+
       # Leak checking needs ptrace, which containers usually do not allow;
       # memory errors and undefined behaviour are what matters here.
       - name: Tests with AddressSanitizer and UndefinedBehaviorSanitizer
@@ -51,7 +63,7 @@ jobs:
           LDFLAGS: -fsanitize=address,undefined
         run: |
           make clean
-          make test
+          make test-cpp
 
       - name: The addon never handles key events
         run: tools/check-addon-events
@@ -64,7 +76,7 @@ jobs:
       contents: read
     steps:
       - name: Install build dependencies
-        run: pacman -Syu --noconfirm --needed git fcitx5 tmux namcap
+        run: pacman -Syu --noconfirm --needed git fcitx5 tmux namcap rust
 
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -134,6 +146,12 @@ jobs:
           grep -E '^0=core:[0-9]+\.[0-9]+\.0$' /usr/share/fcitx5/addon/passwordlayout.conf
           set +e
           password-layout status
+          code=$?
+          set -e
+          echo "exit code without Hyprland: $code"
+          test "$code" -ge 1 && test "$code" -lt 128
+          set +e
+          password-layout doctor
           code=$?
           set -e
           echo "exit code without Hyprland: $code"

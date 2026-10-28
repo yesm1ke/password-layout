@@ -1,0 +1,4 @@
+# keys: layout variant name active_layout_index
+{"keyboards": [
+    {"name": "a \"layout\": no", "layout": "ru,us", "variant": ",", "active_layout_index": 0},
+    {"name": "b", "layout": "us", "variant": "", "active_layout_index": 0}]}

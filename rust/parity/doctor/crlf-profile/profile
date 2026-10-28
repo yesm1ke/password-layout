@@ -1,0 +1,16 @@
+[Groups]
+DefaultIM=keyboard-us
+
+[Groups/0]
+Order=0
+Name=Default
+Default Layout=0
+Style=
+
+[Groups/0/Items/0]
+IMName=keyboard-us
+IMStyle=
+
+[Groups/0/Items/1]
+IMName=keyboard-ru
+IMStyle=

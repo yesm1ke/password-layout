@@ -1,0 +1,9 @@
+[package]
+name = "password-layout"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.89"
+
+[dependencies]
+password-layout-core = { path = "../password-layout-core" }
+libc = "0.2"

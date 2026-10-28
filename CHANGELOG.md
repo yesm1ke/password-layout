@@ -6,6 +6,11 @@ What changed for someone who installs the package. Work in progress is in the
 The releases below, up to 0.6.2, were withdrawn on 2026-10-01: the history was
 rewritten and they no longer match it. Their entries stay as a record.
 
+## unreleased
+
+- The service and the logic of the fcitx5 addon are now written in Rust;
+  building needs cargo. No change in behaviour.
+
 ## 0.7.2 — 2026-10-18
 
 - Qt windows that open with a password field already focused (KeePassXC, the
