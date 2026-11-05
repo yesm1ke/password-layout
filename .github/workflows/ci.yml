@@ -35,8 +35,10 @@ jobs:
         shell: bash
         run: |
           bad=$(git log --format='%ae%n%ce' HEAD | sort -u |
-            grep -vxE '28575713\+yesm1ke@users\.noreply\.github\.com|noreply@github\.com' || true)
-          # The addresses themselves are not printed: CI logs are public.
+            grep -vxE '28575713\+yesm1ke@users\.noreply\.github\.com|noreply@github\.com|49699333\+dependabot\[bot\]@users\.noreply\.github\.com' || true)
+          # Allowed: Mike's and GitHub's no-reply addresses, and Dependabot's (its
+          # action bumps are merged as they are). The addresses themselves are not
+          # printed: CI logs are public.
           if [[ -n $bad ]]; then
             echo "::error::$(wc -l <<<"$bad") address(es) other than the GitHub no-reply ones in the history; check with git log --format='%ae %ce'"
             exit 1
